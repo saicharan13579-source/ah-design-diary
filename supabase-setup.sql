@@ -17,14 +17,14 @@ create table if not exists public.team_access (
   is_owner boolean not null default false
 );
 
--- ===== TEAM EMAILS (edit these four lines) =====
+-- ===== TEAM EMAILS =====
 insert into public.team_access (email, is_owner) values
-  ('saicharan@yourcompany.com', true),   -- Thabbibbu Sai Charan (owner: only he can edit the team list)
-  ('sama@yourcompany.com',      false),  -- Sama Gangothri
-  ('anusha@yourcompany.com',    false),  -- Lalagari Anusha
-  ('bharath@yourcompany.com',   false)   -- Chinnannagari Bharath Sai Teja
+  ('charan.t@ankurahomes.com',        true),   -- Thabbibbu Sai Charan (owner: only he can edit the team list)
+  ('gangothri.s@ankurahomes.com',     false),  -- Sama Gangothri
+  ('anusha.lalagari@ankurahomes.com', false),  -- Lalagari Anusha
+  ('saiteja.bharath@ankurahomes.com', false)   -- Chinnannagari Bharath Sai Teja
 on conflict (email) do update set is_owner = excluded.is_owner;
--- ================================================
+-- ========================
 
 create or replace function public.is_member() returns boolean
 language sql stable security definer set search_path = public as $$
