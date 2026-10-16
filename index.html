@@ -326,6 +326,14 @@ table.team tbody tr:hover{background:var(--paper-2)}
 .bn-b{color:var(--accent)}
 @media (max-width:1100px){.brand{font-size:19px}}
 @media (max-width:520px){.bn-a{display:none}.brand{font-size:18px}}
+.sunbar{position:absolute;top:84px;right:max(24px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;border-radius:18px;width:min(420px,calc(100% - 48px));pointer-events:auto;
+  background:var(--card);-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);border:1px solid var(--line);box-shadow:inset 0 1px 0 var(--glass-edge),var(--glass-shadow);font-size:12px}
+.sunbar button{border:1px solid var(--line);background:var(--field);border-radius:999px;padding:5px 11px;font-weight:600;cursor:pointer;font-size:12px}
+.sunbar button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.sunbar input[type=date]{border:1px solid var(--line);background:var(--field);border-radius:10px;padding:4px 8px;font-size:12px}
+.sunbar input[type=range]{flex:1;min-width:120px;accent-color:var(--accent)}
+.sunbar #sun-lbl{flex-basis:100%;font-family:var(--f-mono);color:var(--ink-2);font-variant-numeric:tabular-nums}
+@media (max-width:760px){.sunbar{display:none}}
 /* ===== fluid glass layer ===== */
 .fluid{position:fixed;inset:0;z-index:-1;overflow:hidden;background:var(--paper);pointer-events:none}
 .fluid i{position:absolute;display:block;width:58vmax;height:58vmax;border-radius:50%;filter:blur(70px);opacity:var(--blob-op);will-change:transform}
@@ -449,6 +457,12 @@ table.team tbody tr:hover{background:var(--paper-2)}
           <a class="btn" href="#diary">Log today's update</a>
           <a class="btn ghost" href="#summary">See team summary</a>
         </div>
+      </div>
+      <div class="sunbar" id="sunbar" role="group" aria-label="Sun and shadow study for the M82 site">
+        <button type="button" id="sun-live" aria-pressed="true" title="Follow the real sun right now">Live sun</button>
+        <input type="date" id="sun-date" aria-label="Date for the shadow study">
+        <input type="range" id="sun-time" min="300" max="1200" step="5" value="720" aria-label="Time of day for the shadow study">
+        <span id="sun-lbl">Sun position</span>
       </div>
       <div class="player" id="player" role="group" aria-label="Construction animation player">
         <button type="button" class="pl-btn" id="pl-play" aria-label="Play the build"><svg class="i-play" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg></button>
@@ -1102,15 +1116,46 @@ const PHASE_PAL = {
   dusk:["#8A6CF0","#F08AA8","#FF9F6B","#5C7BE0","#FFC28A"], night:["#1F3A8A","#3B2A7A","#0E5F7A","#23305E","#6E4FB0"] };
 const WX_TINT = { cloudy:["#B8BEC6",.38], partly:["#C7CDD3",.18], haze:["#D8CDB8",.32], fog:["#DADFE3",.55], drizzle:["#8FA2B5",.42], rain:["#7E93A8",.52], thunder:["#4A4E6A",.58], clear:["#ffffff",0] };
 function mixHex(a,b,t){ const pa = parseInt(a.slice(1),16), pb = parseInt(b.slice(1),16); const ch = sh => Math.round(((pa>>sh)&255)*(1-t) + ((pb>>sh)&255)*t); return "#" + ((1<<24) + (ch(16)<<16) + (ch(8)<<8) + ch(0)).toString(16).slice(1); }
-function istNow(){ const d = new Date(Date.now() + 5.5*3600e3); return { h:d.getUTCHours(), m:d.getUTCMinutes(), mins:d.getUTCHours()*60 + d.getUTCMinutes() }; }
+/* M82 site from the KML: centre of the plot boundary; the SketchUp model's +Y axis points 5° west of true north */
+const SITE_LOC = { lat:17.442463, lon:78.191777, north:5.0 };
+const SUN = { live:true, date:"", mins:0 };
+function simDate(){
+  if (SUN.live || !SUN.date) return new Date();
+  const [y,mo,d] = SUN.date.split("-").map(Number);
+  return new Date(Date.UTC(y, mo-1, d, 0, 0) + (SUN.mins - 330)*60e3);
+}
+function istParts(d){ const t = new Date(d.getTime() + 5.5*3600e3); return { y:t.getUTCFullYear(), mo:t.getUTCMonth()+1, d:t.getUTCDate(), h:t.getUTCHours(), m:t.getUTCMinutes(), mins:t.getUTCHours()*60 + t.getUTCMinutes() }; }
+function istNow(){ return istParts(simDate()); }
+/* solar position (NOAA-style low-precision ephemeris, good to ~0.5°) */
+function sunPos(date, lat = SITE_LOC.lat, lon = SITE_LOC.lon){
+  const rad = Math.PI/180, n = date.getTime()/864e5 + 2440587.5 - 2451545.0;
+  const L = (280.460 + 0.9856474*n) % 360, g = ((357.528 + 0.9856003*n) % 360) * rad;
+  const lam = (L + 1.915*Math.sin(g) + 0.020*Math.sin(2*g)) * rad, eps = (23.439 - 0.0000004*n) * rad;
+  const ra = Math.atan2(Math.cos(eps)*Math.sin(lam), Math.cos(lam)), dec = Math.asin(Math.sin(eps)*Math.sin(lam));
+  const gmst = (18.697374558 + 24.06570982441908*n) % 24, lst = (gmst*15 + lon) * rad, H = lst - ra, la = lat*rad;
+  const el = Math.asin(Math.sin(la)*Math.sin(dec) + Math.cos(la)*Math.cos(dec)*Math.cos(H));
+  const az = Math.atan2(-Math.sin(H), Math.tan(dec)*Math.cos(la) - Math.sin(la)*Math.cos(H));
+  return { az: (az/rad + 360) % 360, el: el/rad };
+}
+const _sunTimes = {};
+function sunTimes(d){
+  const p = istParts(d), key = p.y + "-" + p.mo + "-" + p.d;
+  if (_sunTimes[key]) return _sunTimes[key];
+  const base = Date.UTC(p.y, p.mo-1, p.d, 0, 0) - 330*60e3; let sr = 368, ss = 1074, prev = null;
+  for (let m = 240; m <= 1260; m += 2){ const e = sunPos(new Date(base + m*60e3)).el; if (prev !== null){ if (prev < -0.833 && e >= -0.833) sr = m; if (prev >= -0.833 && e < -0.833) ss = m; } prev = e; }
+  return (_sunTimes[key] = { sr, ss });
+}
+const COMPASS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+const compass = az => COMPASS[Math.round(az/22.5) % 16];
+const fmtMins = m => { const h = Math.floor(m/60), mm = String(m%60).padStart(2,"0"); return `${((h+11)%12)+1}:${mm} ${h<12?"am":"pm"}`; };
 const toMin = (s, dflt) => { const m = /^(\d{1,2}):(\d{2})/.exec(s || ""); return m ? +m[1]*60 + +m[2] : dflt; };
 function computeEnv(){
-  const w = S.env || null, now = istNow(), sr = toMin(w && w.sunrise, 6*60+8), ss = toMin(w && w.sunset, 17*60+54), m = now.mins;
-  const dayFrac = (m - sr) / (ss - sr), elev = (m >= sr && m <= ss) ? Math.sin(Math.PI*dayFrac) : -Math.min(1, Math.min(Math.abs(m - ss), Math.abs(m - sr + (m < sr ? 0 : 1440))) / 90);
+  const w = S.env || null, sd = simDate(), now = istParts(sd), m = now.mins, st = sunTimes(sd), sr = st.sr, ss = st.ss;
+  const sp = sunPos(sd), am = m < 750;
+  const dayFrac = (m - sr) / (ss - sr), elev = Math.sin(sp.el * Math.PI/180);
   let phase = "night";
-  if (m >= sr - 35 && m < sr + 50) phase = "dawn"; else if (m >= sr + 50 && m < sr + 240) phase = "morning";
-  else if (m >= sr + 240 && m < ss - 110) phase = "midday"; else if (m >= ss - 110 && m < ss - 10) phase = "golden";
-  else if (m >= ss - 10 && m < ss + 45) phase = "dusk";
+  if (sp.el >= -6){ if (sp.el < 4) phase = am ? "dawn" : "dusk"; else if (sp.el < 14) phase = am ? "morning" : "golden"; else if (sp.el < 32 && am) phase = "morning"; else phase = "midday"; }
+  ENV.sunAz = sp.az; ENV.sunEl = sp.el; ENV.sr = sr; ENV.ss = ss; ENV.simMins = m;
   const cond = (w && w.condition) || "clear";
   ENV.w = w; ENV.phase = phase; ENV.elev = elev; ENV.dayFrac = Math.max(0, Math.min(1, dayFrac));
   ENV.night = phase === "night" ? 1 : phase === "dusk" ? .45 : phase === "dawn" ? .3 : 0;
@@ -1126,7 +1171,7 @@ function computeEnv(){
   document.documentElement.dataset.wx = cond; document.documentElement.dataset.phase = phase;
   const chip = document.getElementById("wx-chip");
   if (chip){
-    const tm = new Date(Date.now()).toLocaleTimeString("en-IN", { timeZone:"Asia/Kolkata", hour:"numeric", minute:"2-digit" });
+    const tm = fmtMins(m) + (SUN.live ? "" : " (sun study)");
     const desc = (w && w.description) || "Weather loading";
     chip.querySelector(".wx-t").textContent = w && w.tempC != null ? Math.round(w.tempC) + "°" : "–";
     chip.querySelector(".wx-d").textContent = desc + " · " + tm;
@@ -1136,11 +1181,26 @@ function computeEnv(){
   const hw = document.getElementById("hero-wx-t");
   if (hw){
     const PN = { dawn:"Dawn", morning:"Morning", midday:"Midday", golden:"Golden hour", dusk:"Dusk", night:"Night" };
-    const tm2 = new Date().toLocaleTimeString("en-IN", { timeZone:"Asia/Kolkata", hour:"numeric", minute:"2-digit" });
-    hw.textContent = w ? `Hyderabad now · ${Math.round(w.tempC)}°C, ${w.description} · ${PN[phase]} (${tm2} IST). The 3D scene and background follow the live sky.` : `Hyderabad · ${PN[phase]} (${tm2} IST). The 3D scene and background follow the time of day.`;
+    const dstr = sd.toLocaleDateString("en-IN", { timeZone:"Asia/Kolkata", weekday:"short", day:"numeric", month:"short" });
+    const sunTxt = sp.el > -0.8 ? `sun ${Math.round(sp.el)}° high from the ${compass(sp.az)} (${Math.round(sp.az)}°)` : `sun below the horizon (rises ${fmtMins(sr)})`;
+    hw.textContent = `M82 site · 17.4425° N, 78.1918° E · ${dstr}, ${fmtMins(m)} IST · ${PN[phase]}, ${sunTxt}` + (w ? ` · ${Math.round(w.tempC)}°C, ${w.description}` : "") + ". Shadows and sky follow the real sun here.";
+  }
+  const sl = document.getElementById("sun-lbl");
+  if (sl){
+    sl.textContent = `${fmtMins(m)} · ${sp.el > -0.8 ? `sun ${Math.round(sp.el)}° ${compass(sp.az)}` : "night"} · rise ${fmtMins(sr)} · set ${fmtMins(ss)}`;
+    const tr = document.getElementById("sun-time"); if (tr && SUN.live) tr.value = Math.max(+tr.min, Math.min(+tr.max, m));
+    const dt = document.getElementById("sun-date"); if (dt && SUN.live) dt.value = `${now.y}-${String(now.mo).padStart(2,"0")}-${String(now.d).padStart(2,"0")}`;
+    document.getElementById("sun-live").setAttribute("aria-pressed", String(SUN.live));
   }
 }
 setInterval(computeEnv, 60000);
+(() => {
+  const live = document.getElementById("sun-live"), dt = document.getElementById("sun-date"), tr = document.getElementById("sun-time");
+  if (!live) return;
+  const study = () => { SUN.live = false; SUN.date = dt.value || (() => { const p = istParts(new Date()); return `${p.y}-${String(p.mo).padStart(2,"0")}-${String(p.d).padStart(2,"0")}`; })(); SUN.mins = +tr.value; computeEnv(); };
+  tr.addEventListener("input", study); dt.addEventListener("change", study);
+  live.addEventListener("click", () => { SUN.live = true; computeEnv(); });
+})();
 
 const ORBIT = { yaw:0, pitch:0, zoom:1 };
 function build3D(canvas){
@@ -1228,14 +1288,14 @@ function build3D(canvas){
   const PAPER = { dawn:[1,.96,.95], morning:[1,1,.99], midday:[1,1,1], golden:[1,.95,.86], dusk:[.97,.92,.94], night:[1,1,1] };
   const cA = new T.Color(), cB = new T.Color(); let envKey = "", flashUntil = 0, nextFlash = 0;
   function applyEnv(t){
-    const key = ENV.phase + ENV.cond + Math.round(ENV.elev*50);
+    const key = ENV.phase + ENV.cond + Math.round((ENV.sunAz||0)*2) + ":" + Math.round((ENV.sunEl||0)*4);
     if (key !== envKey){ envKey = key;
       const sk = SKY[ENV.phase] || SKY.midday, grey = new T.Color("#9aa3ad");
       const wxDim = ENV.rain ? .55 : ENV.cloud > .7 ? .4 : ENV.haze ? .3 : ENV.cloud > .4 ? .15 : 0;
       skyU.top.value.set(sk[0]).lerp(grey, wxDim); skyU.hor.value.set(sk[1]).lerp(new T.Color(ENV.haze ? "#d9cfbd" : "#b8c0c8"), wxDim*.8); skyU.sunCol.value.set(sk[2]);
-      const a = Math.PI * ENV.dayFrac, el = Math.max(.06, ENV.elev);
+      const el = Math.max(.06, ENV.elev), azM = ((ENV.sunAz || 180) - SITE_LOC.north) * Math.PI/180, eR = Math.max(1.5, ENV.sunEl || 0) * Math.PI/180;
       if (ENV.phase === "night") skyU.sunDir.value.set(-.3, .8, .4).normalize();
-      else skyU.sunDir.value.set(Math.cos(a) * (1 - el*.5), el, .55 * Math.sin(a) + .15).normalize();
+      else skyU.sunDir.value.set(Math.sin(azM)*Math.cos(eR), Math.sin(eR), -Math.cos(azM)*Math.cos(eR)).normalize();
       sun.position.copy(skyU.sunDir.value).multiplyScalar(600);
       sun.color.set(ENV.phase === "night" ? "#9fb3ff" : sk[2]);
       sun.intensity = (ENV.phase === "night" ? .35 : 2.4 * (.45 + .55*Math.min(1, el*1.6))) * (1 - wxDim*.75);

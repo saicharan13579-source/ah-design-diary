@@ -89,7 +89,7 @@
   let wx = null, wxAt = 0;
   async function weather(){
     if (wx && Date.now() - wxAt < 20*60e3) return wx;
-    const j = await (await fetch("https://api.open-meteo.com/v1/forecast?latitude=17.385&longitude=78.4867&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,cloud_cover,precipitation,wind_speed_10m,wind_direction_10m,visibility&daily=sunrise,sunset&timezone=Asia%2FKolkata&forecast_days=1")).json(), c = j.current || {};
+    const j = await (await fetch("https://api.open-meteo.com/v1/forecast?latitude=17.4425&longitude=78.1918&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,cloud_cover,precipitation,wind_speed_10m,wind_direction_10m,visibility&daily=sunrise,sunset&timezone=Asia%2FKolkata&forecast_days=1")).json(), c = j.current || {};
     let [condition, description] = WMO(c.weather_code);
     if ((condition === "clear" || condition === "partly") && c.visibility != null && c.visibility < 5000){ condition = "haze"; description = "Haze"; }
     wx = { condition, description, tempC: Math.round(c.temperature_2m), feelsC: Math.round(c.apparent_temperature), humidity: c.relative_humidity_2m, windKmh: Math.round(c.wind_speed_10m),
