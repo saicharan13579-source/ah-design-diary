@@ -87,3 +87,16 @@ insert into public.docs (col, id, data) values ('team', 'roster', '{
     {"id":"emp354","name":"Lalagari Anusha","role":"GET, Project Documentation & Coordination · 354","reportsTo":"emp229"},
     {"id":"emp365","name":"Chinnannagari Bharath Sai Teja","role":"3D Visualizer · AH-EMP-365","reportsTo":"emp229"}
   ]}'::jsonb) on conflict (col, id) do nothing;
+
+-- Only team emails can create a diary password
+create or replace function public.only_team_signup() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.team_access where email = lower(new.email)) then
+    raise exception 'Email is not on the team';
+  end if;
+  return new;
+end $$;
+drop trigger if exists only_team_signup on auth.users;
+create trigger only_team_signup before insert on auth.users
+  for each row execute function public.only_team_signup();

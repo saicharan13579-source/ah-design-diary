@@ -1,11 +1,12 @@
 /* AH Head Office Design Team Diary — data layer for the free GitHub Pages + Supabase setup.
    Gives the page the small API it expects (db / user / downloads):
-     • sign-in with a sign-in link emailed to each person's Microsoft / Outlook email
+     • sign-in with a email + password sign-in for each person's Microsoft / Outlook email
      • every update stored in Supabase (Postgres) and protected by row-level security
      • live Hyderabad weather straight from Open-Meteo                                   */
 (function(){
   "use strict";
   const CFG = window.AH_CONFIG || {};
+  const viaLink = /type=(magiclink|recovery|signup)/.test(location.hash);
   const POLL_MS = 12000;
   const configured = !!(CFG.supabaseUrl && CFG.supabaseAnonKey && !/YOUR-/.test(CFG.supabaseUrl + CFG.supabaseAnonKey));
   const sb = configured && window.supabase ? window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } }) : null;
@@ -34,42 +35,79 @@
       g.innerHTML = `<form class="box" novalidate>
         <p style="font-family:var(--f-mono,monospace);font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin:0">AH Head Office</p>
         <h2>Design Team Diary</h2>
-        <p id="ah-step-t">Sign in with your work email. We'll email you a sign-in link.</p>
-        <div id="ah-s1"><label for="ah-email">Work email</label><input id="ah-email" type="email" autocomplete="email" placeholder="name@company.com" required><button type="submit" id="ah-send">Email me a sign-in link</button></div>
-        <div id="ah-s2" hidden><label for="ah-code">Or type the code, if your email shows one</label><input id="ah-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"><button type="submit" id="ah-verify">Sign in</button><button type="button" class="link" id="ah-back">Use a different email</button></div>
+        <p id="ah-step-t">Sign in once with your work email and password. You'll stay signed in on this computer.</p>
+        <label for="ah-email">Work email</label><input id="ah-email" type="email" autocomplete="username" placeholder="name@company.com" required>
+        <label for="ah-pass">Password</label><input id="ah-pass" type="password" autocomplete="current-password" placeholder="Your diary password" required>
+        <button type="submit" id="ah-go">Sign in</button>
+        <button type="button" class="link" id="ah-mode">First time here? Create your password</button>
+        <button type="button" class="link" id="ah-forgot">Forgot password, or signed up by email link before? Email me a link</button>
         <div class="msg" id="ah-msg" role="status"></div></form>`;
       document.body.appendChild(g);
       const $ = s => g.querySelector(s), form = $("form"), msg = $("#ah-msg");
-      let step = 1;
-      $("#ah-back").onclick = () => { step = 1; $("#ah-s1").hidden = false; $("#ah-s2").hidden = true; $("#ah-step-t").textContent = "Sign in with your work email. We'll email you a sign-in link."; msg.textContent = ""; };
+      let creating = false;
+      const setMode = c => {
+        creating = c; msg.textContent = "";
+        $("#ah-go").textContent = c ? "Create password and sign in" : "Sign in";
+        $("#ah-mode").textContent = c ? "Already have a password? Sign in" : "First time here? Create your password";
+        $("#ah-pass").placeholder = c ? "Choose a password (8+ characters)" : "Your diary password";
+        $("#ah-pass").autocomplete = c ? "new-password" : "current-password";
+        $("#ah-step-t").textContent = c ? "First time: enter your work email and choose a password. Only team emails can do this." : "Sign in once with your work email and password. You'll stay signed in on this computer.";
+      };
+      $("#ah-mode").onclick = () => setMode(!creating);
+      $("#ah-forgot").onclick = async () => {
+        const email = $("#ah-email").value.trim().toLowerCase();
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.textContent = "Type your work email first, then click this again."; return; }
+        $("#ah-forgot").disabled = true;
+        const { error } = await sb.auth.signInWithOtp({ email, options:{ shouldCreateUser:false, emailRedirectTo: location.origin + location.pathname } });
+        $("#ah-forgot").disabled = false;
+        msg.textContent = error ? (/rate/i.test(error.message) ? "Too many emails just now (Supabase allows 2 an hour). Try again later." : error.message)
+          : `Link sent to ${email}. Open it on this computer; the diary will ask you to choose a new password.`;
+      };
       form.addEventListener("submit", async ev => {
         ev.preventDefault(); msg.textContent = "";
-        const email = $("#ah-email").value.trim().toLowerCase();
-        if (step === 1){
-          if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.textContent = "Enter your work email address."; return; }
-          $("#ah-send").disabled = true;
-          const { error } = await sb.auth.signInWithOtp({ email, options:{ shouldCreateUser:true, emailRedirectTo: location.origin + location.pathname } });
-          $("#ah-send").disabled = false;
-          if (error){ msg.textContent = /rate/i.test(error.message) ? "Too many sign-in emails just now. Wait a few minutes and try again." : error.message; return; }
-          step = 2; $("#ah-s1").hidden = true; $("#ah-s2").hidden = false; $("#ah-step-t").textContent = `We emailed a sign-in link to ${email}. Open the email on this computer and click "Log In" — the diary opens signed in. (Check Junk if it isn't there.)`; $("#ah-code").focus();
-          const poll = setInterval(async () => { const { data } = await sb.auth.getSession(); if (data.session && document.body.contains(g)){ clearInterval(poll); session = data.session; g.remove(); resolve(session); } }, 3000);
-        } else {
-          const token = $("#ah-code").value.replace(/\s/g, "");
-          if (!/^\d{6,10}$/.test(token)){ msg.textContent = "Enter the code from the email."; return; }
-          $("#ah-verify").disabled = true;
-          const { data, error } = await sb.auth.verifyOtp({ email, token, type:"email" });
-          $("#ah-verify").disabled = false;
-          if (error){ msg.textContent = "That code didn't work. Check it, or go back and send a new one."; return; }
-          session = data.session; g.remove(); resolve(session);
+        const email = $("#ah-email").value.trim().toLowerCase(), password = $("#ah-pass").value;
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.textContent = "Enter your work email address."; return; }
+        if (password.length < (creating ? 8 : 1)){ msg.textContent = creating ? "Choose a password of at least 8 characters." : "Enter your password."; return; }
+        $("#ah-go").disabled = true;
+        let res = creating ? await sb.auth.signUp({ email, password }) : await sb.auth.signInWithPassword({ email, password });
+        if (creating && !res.error && !res.data.session) res = await sb.auth.signInWithPassword({ email, password });
+        $("#ah-go").disabled = false;
+        const e = res.error;
+        if (e){
+          const m = e.message || "";
+          msg.textContent = /already registered|already exists/i.test(m) ? "This email already has a password. Use Sign in instead."
+            : /invalid login|invalid credentials/i.test(m) ? "Email or password is wrong. First time? Click \u201cCreate your password\u201d."
+            : /database error|not on the team|saving new user/i.test(m) ? "This email isn't on the design team list. Ask Sai Charan to add it."
+            : /weak|short|at least/i.test(m) ? "Choose a longer password (8+ characters)."
+            : m;
+          return;
         }
+        session = res.data.session; g.remove(); resolve(session);
       });
       setTimeout(() => $("#ah-email").focus(), 50);
     });
   }
   let sessionP = null;
+  function setPassword(){
+    if (!document.getElementById("ah-gate-css")){ const st = document.createElement("style"); st.id = "ah-gate-css"; st.textContent = css; document.head.appendChild(st); }
+    const g = document.createElement("div"); g.className = "ah-gate"; g.setAttribute("role","dialog"); g.setAttribute("aria-modal","true");
+    g.innerHTML = `<form class="box" novalidate><h2>Choose your password</h2><p>You signed in with an email link. Choose a password so next time you can sign in without email.</p>
+      <label for="ah-np">New password</label><input id="ah-np" type="password" autocomplete="new-password" placeholder="8+ characters">
+      <button type="submit">Save password</button><button type="button" class="link" id="ah-skip">Not now</button><div class="msg" role="status"></div></form>`;
+    document.body.appendChild(g);
+    const f = g.querySelector("form"), m = g.querySelector(".msg");
+    g.querySelector("#ah-skip").onclick = () => g.remove();
+    f.addEventListener("submit", async ev => { ev.preventDefault();
+      const password = g.querySelector("#ah-np").value;
+      if (password.length < 8){ m.textContent = "At least 8 characters, please."; return; }
+      const { error } = await sb.auth.updateUser({ password });
+      if (error){ m.textContent = error.message; return; }
+      m.textContent = "Saved. You're signed in."; setTimeout(() => g.remove(), 900);
+    });
+  }
   function ensureSession(){
     if (!sb) return Promise.resolve(null);
-    if (!sessionP) sessionP = sb.auth.getSession().then(({ data }) => data.session || gate()).then(s => (session = s));
+    if (!sessionP) sessionP = sb.auth.getSession().then(({ data }) => data.session || gate()).then(s => { session = s; if (viaLink && s) setPassword(); return s; });
     return sessionP;
   }
   const uid = () => session && session.user ? session.user.id : null;

@@ -1,7 +1,7 @@
 # AH Head Office Design Team Diary
 
 The daily work log for the AH Head Office design team. It's a free website on **GitHub Pages**
-with a free **Supabase** database. Everyone signs in with their work email using a sign-in link sent to their email.
+with a free **Supabase** database. Everyone signs in once with their work email and a password they choose. No daily login.
 No passwords, no Claude account, no cost.
 
 - **Site:** https://saicharan13579-source.github.io/ah-design-diary/
@@ -18,7 +18,8 @@ No passwords, no Claude account, no cost.
    - Click **Create new project**, then wait about 1 minute.
 3. **SQL Editor → New query.** Paste the whole of `supabase-setup.sql` from this repository.
    Change the **four emails** in the *TEAM EMAILS* block to your team's real emails, then click **Run**.
-4. **Authentication → Emails → Magic Link** template.
+4. **Authentication → Sign In / Providers:** turn **Confirm email** off and click **Save**, so new passwords work at once with no email.
+   *(Optional)* **Authentication → Emails → Magic Link** template, which needs custom SMTP.
    Replace the message body with the text below, then click **Save**. This makes the email carry a
    6-digit code, which Outlook's link scanner can't use up.
    ```
@@ -34,7 +35,7 @@ GitHub Pages updates within about a minute. Open the site, enter your email, typ
 
 ## Using it
 
-- **First visit:** each person chooses their name under **Who are you?** and logs their update.
+- **First visit:** click **First time here? Create your password**, enter your work email and choose a password. Only emails in `team_access` can do this. Then each person chooses their name under **Who are you?** and logs their update.
 - **Anusha** sees **Logging for** and can file updates under Sai Charan's name.
 - **Only the owner email** can change the team list, enforced by the database rules.
 - **Adding a person later:** add their email to the `team_access` table (Supabase → Table Editor),
