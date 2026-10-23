@@ -1,6 +1,6 @@
 /* AH Head Office Design Team Diary — data layer for the free GitHub Pages + Supabase setup.
    Gives the page the small API it expects (db / user / downloads):
-     • sign-in with a 6-digit code sent to each person's Microsoft / Outlook email
+     • sign-in with a sign-in link emailed to each person's Microsoft / Outlook email
      • every update stored in Supabase (Postgres) and protected by row-level security
      • live Hyderabad weather straight from Open-Meteo                                   */
 (function(){
@@ -34,14 +34,14 @@
       g.innerHTML = `<form class="box" novalidate>
         <p style="font-family:var(--f-mono,monospace);font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin:0">AH Head Office</p>
         <h2>Design Team Diary</h2>
-        <p id="ah-step-t">Sign in with your work email. We'll email you a 6-digit code.</p>
-        <div id="ah-s1"><label for="ah-email">Work email</label><input id="ah-email" type="email" autocomplete="email" placeholder="name@company.com" required><button type="submit" id="ah-send">Email me a code</button></div>
-        <div id="ah-s2" hidden><label for="ah-code">6-digit code</label><input id="ah-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"><button type="submit" id="ah-verify">Sign in</button><button type="button" class="link" id="ah-back">Use a different email</button></div>
+        <p id="ah-step-t">Sign in with your work email. We'll email you a sign-in link.</p>
+        <div id="ah-s1"><label for="ah-email">Work email</label><input id="ah-email" type="email" autocomplete="email" placeholder="name@company.com" required><button type="submit" id="ah-send">Email me a sign-in link</button></div>
+        <div id="ah-s2" hidden><label for="ah-code">Or type the code, if your email shows one</label><input id="ah-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"><button type="submit" id="ah-verify">Sign in</button><button type="button" class="link" id="ah-back">Use a different email</button></div>
         <div class="msg" id="ah-msg" role="status"></div></form>`;
       document.body.appendChild(g);
       const $ = s => g.querySelector(s), form = $("form"), msg = $("#ah-msg");
       let step = 1;
-      $("#ah-back").onclick = () => { step = 1; $("#ah-s1").hidden = false; $("#ah-s2").hidden = true; $("#ah-step-t").textContent = "Sign in with your work email. We'll email you a 6-digit code."; msg.textContent = ""; };
+      $("#ah-back").onclick = () => { step = 1; $("#ah-s1").hidden = false; $("#ah-s2").hidden = true; $("#ah-step-t").textContent = "Sign in with your work email. We'll email you a sign-in link."; msg.textContent = ""; };
       form.addEventListener("submit", async ev => {
         ev.preventDefault(); msg.textContent = "";
         const email = $("#ah-email").value.trim().toLowerCase();
@@ -50,8 +50,9 @@
           $("#ah-send").disabled = true;
           const { error } = await sb.auth.signInWithOtp({ email, options:{ shouldCreateUser:true, emailRedirectTo: location.origin + location.pathname } });
           $("#ah-send").disabled = false;
-          if (error){ msg.textContent = /rate/i.test(error.message) ? "Too many codes sent just now. Wait a few minutes and try again." : error.message; return; }
-          step = 2; $("#ah-s1").hidden = true; $("#ah-s2").hidden = false; $("#ah-step-t").textContent = `We sent a code to ${email}. Check your inbox (and Junk), then enter it below.`; $("#ah-code").focus();
+          if (error){ msg.textContent = /rate/i.test(error.message) ? "Too many sign-in emails just now. Wait a few minutes and try again." : error.message; return; }
+          step = 2; $("#ah-s1").hidden = true; $("#ah-s2").hidden = false; $("#ah-step-t").textContent = `We emailed a sign-in link to ${email}. Open the email on this computer and click "Log In" — the diary opens signed in. (Check Junk if it isn't there.)`; $("#ah-code").focus();
+          const poll = setInterval(async () => { const { data } = await sb.auth.getSession(); if (data.session && document.body.contains(g)){ clearInterval(poll); session = data.session; g.remove(); resolve(session); } }, 3000);
         } else {
           const token = $("#ah-code").value.replace(/\s/g, "");
           if (!/^\d{6,10}$/.test(token)){ msg.textContent = "Enter the code from the email."; return; }

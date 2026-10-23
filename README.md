@@ -1,7 +1,7 @@
 # AH Head Office Design Team Diary
 
 The daily work log for the AH Head Office design team. It's a free website on **GitHub Pages**
-with a free **Supabase** database. Everyone signs in with their work email using a 6-digit code.
+with a free **Supabase** database. Everyone signs in with their work email using a sign-in link sent to their email.
 No passwords, no Claude account, no cost.
 
 - **Site:** https://saicharan13579-source.github.io/ah-design-diary/
