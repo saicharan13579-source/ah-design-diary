@@ -552,7 +552,7 @@ table.team tbody tr:hover{background:var(--paper-2)}
             </div>
           </div>
         </div>
-        <div class="field"><label for="f-note">Today's work <span style="text-transform:none;font-weight:400">(one point per project)</span></label><textarea id="f-note" rows="4" maxlength="2000" placeholder="• UTF project - villa 14 client project&#10;• THE WOODS project - villa 10 working drawing&#10;• (press Enter for the next point; add 2h to set hours)"></textarea>
+        <div class="field"><label for="f-note">Today's work <span style="text-transform:none;font-weight:400">(one line per project)</span></label><textarea id="f-note" rows="4" maxlength="2000" placeholder="UTF project - villa 14 client project&#10;THE WOODS project - villa 10 working drawing&#10;(add 2h to a line to set its hours)"></textarea>
           <div class="parsed" id="f-parsed" aria-live="polite"></div></div>
         <div class="field"><label for="f-next">Plan for next / blockers <span style="text-transform:none;font-weight:400">(optional)</span></label><input type="text" id="f-next" maxlength="300" placeholder="e.g. Waiting on MEP shaft sizes from consultant"></div>
         <div class="field"><span class="lbl">Status</span><div class="chips" id="f-status" role="radiogroup" aria-label="Status"></div></div>
@@ -787,7 +787,7 @@ function entryCard(e, showDate){
       <span class="pill st-${esc(e.status||"progress")}">${esc(STATUS_LBL[e.status]||"In progress")}</span>
       <span class="mono" style="margin-left:auto">${fmtH(+e.hours||0)} h</span></div>
     <div class="meta" style="margin-top:6px"><span class="tag"><i class="sw" style="background:${catVar(e.project)}"></i>${esc(e.project)}</span>${e.unit?`<span class="tag">${esc(e.unit)}</span>`:""}${stagesOf(e).map(st => `<span class="tag">${esc(st)}</span>`).join("")}</div>
-    <p class="note">${e.line ? "• " : ""}${esc(e.note)}</p>
+    <p class="note">${esc(e.note)}</p>
     ${e.next?`<p class="next">Next: ${esc(e.next)}</p>`:""}
     ${mine?`<div class="acts">${confirm?`<span>Delete this update?</span><button type="button" class="link-btn danger" data-del-yes="${esc(e.id)}">Delete</button><button type="button" class="link-btn" data-del-no="1">Keep</button>`:`<button type="button" class="link-btn" data-edit="${esc(e.id)}">Edit</button><button type="button" class="link-btn" data-del="${esc(e.id)}">Delete</button>`}</div>`:""}
   </div></article>`;
@@ -1003,7 +1003,7 @@ function startEdit(id){
   const fs = $("#f-for"); if (fs){ const rid = e.uid === S.me ? "" : rosterIdOf(e.uid) || ""; if ([...fs.options].some(o => o.value === rid)) fs.value = rid; }
   $("#f-date").value = e.date; $("#f-hours").value = e.hours; $("#f-next").value = e.next || "";
   const ln = e.line || `${e.project || ""}${e.unit ? " - " + e.unit : " -"} ${e.note || ""}`.trim();
-  S.stageOv = {}; $("#f-note").value = "• " + ln; const pl = parseLine(ln); if (pl) S.stageOv[pl.line] = stagesOf(e);
+  S.stageOv = {}; $("#f-note").value = ln; const pl = parseLine(ln); if (pl) S.stageOv[pl.line] = stagesOf(e);
   renderParsed();
   const ss = document.getElementById("ss-"+e.status); if (ss) ss.checked = true;
   updateFormTitle();
@@ -1093,22 +1093,6 @@ function wire(){
   $("#entry-form").addEventListener("submit", saveEntry);
   S.stageOv = {};
   $("#f-note").addEventListener("input", renderParsed);
-  const BUL = "• ", fn = $("#f-note");
-  const bulletize = () => { const pos = fn.selectionStart, before = fn.value.length;
-    const v = fn.value.split("\n").map(l => { const t = l.replace(/^\s*(?:[-•*]|\d+[.)])\s*/, ""); return t || l.trim() === "•" || l === BUL ? BUL + t : l; }).join("\n");
-    if (v !== fn.value){ fn.value = v; const p = Math.max(0, pos + (fn.value.length - before)); fn.setSelectionRange(p, p); } };
-  fn.addEventListener("focus", () => { if (!fn.value.trim()){ fn.value = BUL; fn.setSelectionRange(BUL.length, BUL.length); } });
-  fn.addEventListener("blur", () => { if (fn.value.trim() === "•") fn.value = ""; else { fn.value = fn.value.split("\n").filter(l => l.replace(/^\s*•\s*/, "").trim()).join("\n"); renderParsed(); } });
-  fn.addEventListener("keydown", ev => {
-    if (ev.key === "Enter" && !ev.shiftKey && !ev.isComposing){
-      ev.preventDefault(); const a = fn.selectionStart, b = fn.selectionEnd;
-      fn.setRangeText("\n" + BUL, a, b, "end"); renderParsed();
-    } else if (ev.key === "Backspace" && fn.selectionStart === fn.selectionEnd){
-      const a = fn.selectionStart, ls = fn.value.lastIndexOf("\n", a - 1) + 1;
-      if (a - ls === BUL.length && fn.value.slice(ls, a) === BUL){ ev.preventDefault(); fn.setRangeText("", Math.max(0, ls - (ls ? 1 : 0)), a, "end"); renderParsed(); }
-    }
-  });
-  fn.addEventListener("paste", () => setTimeout(() => { bulletize(); renderParsed(); }, 0));
   $("#f-hours").addEventListener("input", renderParsed);
   ["#h-minus","#h-plus"].forEach(id => $(id).addEventListener("click", () => setTimeout(renderParsed, 0)));
   $("#f-parsed").addEventListener("click", ev => {
