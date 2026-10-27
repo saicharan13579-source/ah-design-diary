@@ -181,6 +181,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 .tag .sw{width:8px;height:8px;border-radius:2px}
 .parsed{display:grid;gap:6px;margin-top:8px}
 .pl{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--paper,#fff) 55%,transparent)}
+.pl .stg{display:flex;flex-wrap:wrap;gap:4px;width:100%}
+.pl .stg button{font:inherit;font-size:11.5px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:var(--paper,#fff);color:inherit;cursor:pointer}
+.pl .stg button[aria-pressed=true]{background:var(--accent,#D2601A);border-color:var(--accent,#D2601A);color:#fff}
+.pl .stg button.all{font-weight:600}
 .pl select{font:inherit;font-size:12px;padding:3px 6px;border-radius:8px;border:1px solid var(--line);background:var(--paper,#fff);color:inherit;max-width:100%}
 .pl .mono{margin-left:auto;font-size:12px}
 .proj-block{padding:12px 0;border-bottom:1px solid var(--line)}
@@ -774,7 +778,7 @@ function entryCard(e, showDate){
       ${e.by && e.by !== e.uid ? `<span style="color:var(--ink-2);font-size:12px">logged by ${esc(nameOf(e.by))}</span>` : ""}
       <span class="pill st-${esc(e.status||"progress")}">${esc(STATUS_LBL[e.status]||"In progress")}</span>
       <span class="mono" style="margin-left:auto">${fmtH(+e.hours||0)} h</span></div>
-    <div class="meta" style="margin-top:6px"><span class="tag"><i class="sw" style="background:${catVar(e.project)}"></i>${esc(e.project)}</span>${e.unit?`<span class="tag">${esc(e.unit)}</span>`:""}<span class="tag">${esc(e.stage||"")}</span></div>
+    <div class="meta" style="margin-top:6px"><span class="tag"><i class="sw" style="background:${catVar(e.project)}"></i>${esc(e.project)}</span>${e.unit?`<span class="tag">${esc(e.unit)}</span>`:""}${stagesOf(e).map(st => `<span class="tag">${esc(st)}</span>`).join("")}</div>
     <p class="note">${esc(e.note)}</p>
     ${e.next?`<p class="next">Next: ${esc(e.next)}</p>`:""}
     ${mine?`<div class="acts">${confirm?`<span>Delete this update?</span><button type="button" class="link-btn danger" data-del-yes="${esc(e.id)}">Delete</button><button type="button" class="link-btn" data-del-no="1">Keep</button>`:`<button type="button" class="link-btn" data-edit="${esc(e.id)}">Edit</button><button type="button" class="link-btn" data-del="${esc(e.id)}">Delete</button>`}</div>`:""}
@@ -823,7 +827,8 @@ function parseLine(raw){
   line = line.replace(/[\s(,]*(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hours)\b\)?/i, (m,h) => { hours = +h; return ""; }).trim();
   if (!line) return null;
   const low = line.toLowerCase();
-  const stage = (STAGE_KEYS.find(([,re]) => re.test(low)) || ["Other"])[0];
+  const found = STAGE_KEYS.filter(([,re]) => re.test(low)).map(([st]) => st);
+  const stages = found.length ? STAGES.filter(st => found.includes(st)) : ["Other"], stage = stages.join(", ");
   let proj = "", rest = line;
   const sep = line.match(/\s+[-–—]\s+|\s*[:|]\s*/);
   if (sep){ proj = line.slice(0, sep.index); rest = line.slice(sep.index + sep[0].length); }
@@ -837,10 +842,12 @@ function parseLine(raw){
   proj = tidyProject(proj) || "General";
   const um = rest.match(UNIT_RE) || line.match(UNIT_RE);
   const unit = um ? (um[1][0].toUpperCase() + um[1].slice(1).toLowerCase().replace(/\s+/," ")) + (um[2] ? " " + um[2].toUpperCase() : "") : "";
-  return { line, project: proj, unit, stage, hours };
+  return { line, project: proj, unit, stage, stages, hours };
 }
 function parsedLines(){
-  return $("#f-note").value.split(/\n|;/).map(parseLine).filter(Boolean).map(p => { if (S.stageOv && S.stageOv[p.line]) p.stage = S.stageOv[p.line]; return p; });
+  return $("#f-note").value.split(/\n|;/).map(parseLine).filter(Boolean).map(p => { if (S.stageOv && S.stageOv[p.line] && S.stageOv[p.line].length){ p.stages = S.stageOv[p.line].slice(); p.stage = p.stages.join(", "); } return p; });
+}
+function stagesOf(e){ return Array.isArray(e.stages) && e.stages.length ? e.stages : String(e.stage || "Other").split(/\s*,\s*/).filter(Boolean);
 }
 function splitHours(ps){
   const total = parseFloat($("#f-hours").value) || 0;
@@ -854,8 +861,8 @@ function renderParsed(){
   const ps = parsedLines(); S.lastParsed = ps;
   if (!ps.length){ box.innerHTML = ""; return; }
   const hs = splitHours(ps);
-  box.innerHTML = `<p class="who-note" style="margin:0">Saved as ${ps.length} ${ps.length===1?"update":"updates"} (change a stage if it guessed wrong):</p>` +
-    ps.map((p,i) => `<div class="pl"><span class="tag"><i class="sw" style="background:${catVar(p.project)}"></i>${esc(p.project)}</span>${p.unit?`<span class="tag">${esc(p.unit)}</span>`:""}<select data-pl="${i}" aria-label="Work stage for line ${i+1}">${[...STAGES,"Other"].map(st=>`<option${st===p.stage?" selected":""}>${esc(st)}</option>`).join("")}</select><span class="mono">${fmtH(hs[i])} h</span></div>`).join("");
+  box.innerHTML = `<p class="who-note" style="margin:0">Saved as ${ps.length} ${ps.length===1?"update":"updates"} (tap stages to add or remove; pick as many as you like, or All):</p>` +
+    ps.map((p,i) => `<div class="pl"><span class="tag"><i class="sw" style="background:${catVar(p.project)}"></i>${esc(p.project)}</span>${p.unit?`<span class="tag">${esc(p.unit)}</span>`:""}<span class="mono">${fmtH(hs[i])} h</span><div class="stg" role="group" aria-label="Work stages for line ${i+1}"><button type="button" class="all" data-pl="${i}" data-st="*" aria-pressed="${STAGES.every(st=>p.stages.includes(st))}">All</button>${STAGES.map(st=>`<button type="button" data-pl="${i}" data-st="${esc(st)}" aria-pressed="${p.stages.includes(st)}">${esc(st)}</button>`).join("")}</div></div>`).join("");
 }
 
 /* summary */
@@ -914,7 +921,7 @@ function renderSummary(){
 
   $("#by-project").innerHTML = hbars(projH, catVar);
   renderProgress(list);
-  const stH = {}; list.forEach(e => stH[e.stage||"Other"] = (stH[e.stage||"Other"]||0) + (+e.hours||0));
+  const stH = {}; list.forEach(e => { const ss = stagesOf(e), h = (+e.hours||0) / ss.length; ss.forEach(st => stH[st] = (stH[st]||0) + h); });
   $("#by-stage").innerHTML = hbars(stH, k => `var(--c${(STAGES.indexOf(k)%6+6)%6+1})`);
   $("#bp-sub").textContent = `${Object.keys(projH).length} projects`; $("#bs-sub").textContent = `${Object.keys(stH).length} stages`;
 
@@ -940,7 +947,7 @@ function renderProgress(list){
   list.forEach(e => { const p = e.project || "Untitled", u = e.unit || "General", h = +e.hours || 0;
     const pr = (P[p] ||= { h:0, units:{} }); pr.h += h;
     const o = (pr.units[u] ||= { h:0, st:{}, last:null, people:new Set() }); o.h += h;
-    const sg = e.stage || "Other"; o.st[sg] = (o.st[sg] || 0) + h; o.people.add(e.uid);
+    const ss = stagesOf(e); ss.forEach(sg => o.st[sg] = (o.st[sg] || 0) + h / ss.length); o.people.add(e.uid);
     if (!o.last || e.date > o.last.date || (e.date === o.last.date && (e.updatedAt||"") > (o.last.updatedAt||""))) o.last = e; });
   const ps = Object.entries(P).sort((a,b) => b[1].h - a[1].h);
   $("#pg-sub").textContent = ps.length ? `${ps.length} projects · ${ps.reduce((t,[,v])=>t+Object.keys(v.units).length,0)} villas / units` : "";
@@ -949,11 +956,11 @@ function renderProgress(list){
     const us = Object.entries(v.units).sort((a,b) => a[0].localeCompare(b[0], undefined, { numeric:true }));
     return `<div class="proj-block"><div class="proj-head"><i style="width:10px;height:10px;border-radius:2px;background:${catVar(p)}"></i>${esc(p)}<span class="mono">${fmtH(v.h)} h · ${us.length} ${us.length===1?"unit":"units"}</span></div>
       <div class="tbl-wrap"><table class="prog"><thead><tr><th>Unit</th><th>Design stage</th><th>Current stage</th><th>Work done</th><th>Status</th><th>Last update</th><th>Who</th></tr></thead><tbody>${us.map(([u,o]) => {
-        const cur = o.last ? o.last.stage : "", ci = PIPE.indexOf(cur);
-        const pipe = PIPE.map((s,i) => `<i class="${s===cur?"cur":o.st[s]?"on":""}" title="${esc(s)}${o.st[s]?": "+fmtH(o.st[s])+" h":""}"></i>`).join("");
+        const curS = o.last ? stagesOf(o.last) : [], cur = curS.join(", "), ci = Math.max(...curS.map(x => PIPE.indexOf(x)), -1);
+        const pipe = PIPE.map((s,i) => `<i class="${curS.includes(s)?"cur":o.st[s]?"on":""}" title="${esc(s)}${o.st[s]?": "+fmtH(o.st[s])+" h":""}"></i>`).join("");
         const tags = Object.entries(o.st).sort((a,b)=>b[1]-a[1]).map(([s,h]) => `<span class="tag">${esc(s)} · ${fmtH(h)} h</span>`).join("");
         const stt = o.last && o.last.status || "progress";
-        return `<tr><td><b>${esc(u)}</b></td><td><div class="pipe" aria-label="${esc(ci>=0?`Stage ${ci+1} of ${PIPE.length}: ${cur}`:cur)}">${pipe}</div></td><td>${esc(cur)}</td><td><div class="tags">${tags}</div></td><td><span class="pill st-${esc(stt)}">${esc(STATUS_LBL[stt]||"In progress")}</span></td><td class="mono">${o.last ? esc(fmtShort(parse(o.last.date))) : ""}</td><td>${[...o.people].map(x=>avatar(x,"sm")).join("")}</td></tr>`; }).join("")}</tbody></table></div></div>`;
+        return `<tr><td><b>${esc(u)}</b></td><td><div class="pipe" aria-label="${esc(ci>=0?`Up to stage ${ci+1} of ${PIPE.length}: ${PIPE[ci]}`:cur)}">${pipe}</div></td><td>${esc(cur)}</td><td><div class="tags">${tags}</div></td><td><span class="pill st-${esc(stt)}">${esc(STATUS_LBL[stt]||"In progress")}</span></td><td class="mono">${o.last ? esc(fmtShort(parse(o.last.date))) : ""}</td><td>${[...o.people].map(x=>avatar(x,"sm")).join("")}</td></tr>`; }).join("")}</tbody></table></div></div>`;
   }).join("");
 }
 
@@ -988,7 +995,7 @@ function startEdit(id){
   const fs = $("#f-for"); if (fs){ const rid = e.uid === S.me ? "" : rosterIdOf(e.uid) || ""; if ([...fs.options].some(o => o.value === rid)) fs.value = rid; }
   $("#f-date").value = e.date; $("#f-hours").value = e.hours; $("#f-next").value = e.next || "";
   const ln = e.line || `${e.project || ""}${e.unit ? " - " + e.unit : " -"} ${e.note || ""}`.trim();
-  S.stageOv = {}; $("#f-note").value = ln; const pl = parseLine(ln); if (pl && e.stage) S.stageOv[pl.line] = e.stage;
+  S.stageOv = {}; $("#f-note").value = ln; const pl = parseLine(ln); if (pl) S.stageOv[pl.line] = stagesOf(e);
   renderParsed();
   const ss = document.getElementById("ss-"+e.status); if (ss) ss.checked = true;
   updateFormTitle();
@@ -1023,7 +1030,7 @@ async function saveEntry(ev){
   const now = new Date().toISOString();
   const forId = $("#for-wrap").hidden ? "" : $("#f-for").value;
   const base = { uid: forId ? uidForRoster(forId) : S.me, by:S.me, date, status, next:$("#f-next").value.trim(), updatedAt:now };
-  const rows = lines.map((p,i) => Object.assign({}, base, { project:p.project, unit:p.unit, stage:p.stage, hours:lineHours[i], note:p.line, line:p.line }));
+  const rows = lines.map((p,i) => Object.assign({}, base, { project:p.project, unit:p.unit, stage:p.stages.join(", "), stages:p.stages, hours:lineHours[i], note:p.line, line:p.line }));
   try {
     if (needName) await S.db.doc("people/"+S.me).set({ name, role, rosterId, updatedAt:now });
     let i0 = 0;
@@ -1080,7 +1087,14 @@ function wire(){
   $("#f-note").addEventListener("input", renderParsed);
   $("#f-hours").addEventListener("input", renderParsed);
   ["#h-minus","#h-plus"].forEach(id => $(id).addEventListener("click", () => setTimeout(renderParsed, 0)));
-  $("#f-parsed").addEventListener("change", ev => { const i = ev.target.dataset && ev.target.dataset.pl; if (i == null || !S.lastParsed || !S.lastParsed[i]) return; S.stageOv[S.lastParsed[i].line] = ev.target.value; });
+  $("#f-parsed").addEventListener("click", ev => {
+    const b = ev.target.closest("button[data-st]"); if (!b || !S.lastParsed) return;
+    const p = S.lastParsed[b.dataset.pl]; if (!p) return;
+    let cur = p.stages.filter(x => x !== "Other"); const st = b.dataset.st;
+    if (st === "*") cur = STAGES.every(x => cur.includes(x)) ? [] : STAGES.slice();
+    else cur = cur.includes(st) ? cur.filter(x => x !== st) : STAGES.filter(x => cur.includes(x) || x === st);
+    S.stageOv[p.line] = cur.length ? cur : ["Other"]; renderParsed();
+  });
   $("#f-cancel").onclick = cancelEdit;
   $("#cal-prev").onclick = () => { S.calMonth = new Date(S.calMonth.getFullYear(), S.calMonth.getMonth()-1, 1); ensureSubs(); schedule(); };
   $("#cal-next").onclick = () => { S.calMonth = new Date(S.calMonth.getFullYear(), S.calMonth.getMonth()+1, 1); ensureSubs(); schedule(); };
