@@ -195,7 +195,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .pipe i{width:22px;height:6px;border-radius:3px;background:var(--line)}
 .pipe i.on{background:var(--accent,#D2601A);opacity:.45}
 .pipe i.cur{background:var(--accent,#D2601A);opacity:1}
-table.prog{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+table.prog{width:100%;border-collapse:collapse;font-size:13px;min-width:560px;table-layout:fixed}
+table.prog th:nth-child(1){width:13%}table.prog th:nth-child(2){width:20%}table.prog th:nth-child(3){width:31%}table.prog th:nth-child(4){width:13%}table.prog th:nth-child(5){width:11%}table.prog th:nth-child(6){width:12%}
 table.prog th{font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);text-align:left;font-weight:500;padding:6px 8px;border-bottom:1px solid var(--line)}
 table.prog td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
 table.prog tr:last-child td{border-bottom:0}
@@ -955,12 +956,12 @@ function renderProgress(list){
   $("#progress").innerHTML = ps.map(([p,v]) => {
     const us = Object.entries(v.units).sort((a,b) => a[0].localeCompare(b[0], undefined, { numeric:true }));
     return `<div class="proj-block"><div class="proj-head"><i style="width:10px;height:10px;border-radius:2px;background:${catVar(p)}"></i>${esc(p)}<span class="mono">${fmtH(v.h)} h · ${us.length} ${us.length===1?"unit":"units"}</span></div>
-      <div class="tbl-wrap"><table class="prog"><thead><tr><th>Unit</th><th>Design stage</th><th>Current stage</th><th>Work done</th><th>Status</th><th>Last update</th><th>Who</th></tr></thead><tbody>${us.map(([u,o]) => {
+      <div class="tbl-wrap"><table class="prog"><thead><tr><th>Unit</th><th>Current stage</th><th>Work done</th><th>Status</th><th>Last update</th><th>Who</th></tr></thead><tbody>${us.map(([u,o]) => {
         const curS = o.last ? stagesOf(o.last) : [], cur = curS.join(", "), ci = Math.max(...curS.map(x => PIPE.indexOf(x)), -1);
         const pipe = PIPE.map((s,i) => `<i class="${curS.includes(s)?"cur":o.st[s]?"on":""}" title="${esc(s)}${o.st[s]?": "+fmtH(o.st[s])+" h":""}"></i>`).join("");
         const tags = Object.entries(o.st).sort((a,b)=>b[1]-a[1]).map(([s,h]) => `<span class="tag">${esc(s)} · ${fmtH(h)} h</span>`).join("");
         const stt = o.last && o.last.status || "progress";
-        return `<tr><td><b>${esc(u)}</b></td><td><div class="pipe" aria-label="${esc(ci>=0?`Up to stage ${ci+1} of ${PIPE.length}: ${PIPE[ci]}`:cur)}">${pipe}</div></td><td>${esc(cur)}</td><td><div class="tags">${tags}</div></td><td><span class="pill st-${esc(stt)}">${esc(STATUS_LBL[stt]||"In progress")}</span></td><td class="mono">${o.last ? esc(fmtShort(parse(o.last.date))) : ""}</td><td>${[...o.people].map(x=>avatar(x,"sm")).join("")}</td></tr>`; }).join("")}</tbody></table></div></div>`;
+        return `<tr><td><b>${esc(u)}</b></td><td>${esc(cur)}</td><td><div class="tags">${tags}</div></td><td><span class="pill st-${esc(stt)}">${esc(STATUS_LBL[stt]||"In progress")}</span></td><td class="mono">${o.last ? esc(fmtShort(parse(o.last.date))) : ""}</td><td>${[...o.people].map(x=>avatar(x,"sm")).join("")}</td></tr>`; }).join("")}</tbody></table></div></div>`;
   }).join("");
 }
 
