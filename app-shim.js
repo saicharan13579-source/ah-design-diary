@@ -9,7 +9,7 @@
   const viaLink = /type=(magiclink|recovery|signup)/.test(location.hash);
   const POLL_MS = 12000;
   const configured = !!(CFG.supabaseUrl && CFG.supabaseAnonKey && !/YOUR-/.test(CFG.supabaseUrl + CFG.supabaseAnonKey));
-  const sb = configured && window.supabase ? window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } }) : null;
+  const sb = configured && window.supabase ? window.supabase.createClient(CFG.proxyUrl || CFG.supabaseUrl, CFG.supabaseAnonKey, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storageKey:"sb-" + (CFG.supabaseUrl.match(/\/\/([^.]+)/)||[,"ah"])[1] + "-auth-token" } }) : null;
   const meta = { fromCache:false, hasPendingWrites:false };
   const snapDoc = (id, data) => ({ id, exists: !!data, data: () => data || undefined, metadata: meta });
   const snapQuery = rows => { const docs = rows.map(r => snapDoc(r.id, r.data)); return { docs, size: docs.length, empty: !docs.length, docChanges: () => [], metadata: meta }; };

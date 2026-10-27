@@ -1,0 +1,32 @@
+// AH Design Team Diary · Cloudflare Worker relay to Supabase
+// Lets the diary reach its database even where *.supabase.co is blocked.
+const UPSTREAM = "https://muzdlzkcqrepkwxnjssp.supabase.co";
+const ALLOWED_ORIGINS = ["https://saicharan13579-source.github.io"];
+const ALLOWED_PATHS = /^\/(auth\/v1|rest\/v1)\//;
+
+export default {
+  async fetch(req) {
+    const url = new URL(req.url);
+    const origin = req.headers.get("Origin") || "";
+    const cors = {
+      "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+      "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+      "Access-Control-Allow-Headers": req.headers.get("Access-Control-Request-Headers") || "authorization,apikey,content-type,prefer,x-client-info,accept-profile,content-profile,range",
+      "Access-Control-Expose-Headers": "content-range,x-supabase-api-version",
+      "Access-Control-Max-Age": "86400",
+      "Vary": "Origin",
+    };
+    if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+    if (!ALLOWED_PATHS.test(url.pathname)) return new Response("Not found", { status: 404, headers: cors });
+    const headers = new Headers(req.headers);
+    headers.delete("host"); headers.delete("origin"); headers.delete("referer");
+    const upstream = await fetch(UPSTREAM + url.pathname + url.search, {
+      method: req.method, headers,
+      body: ["GET", "HEAD"].includes(req.method) ? undefined : await req.arrayBuffer(),
+      redirect: "manual",
+    });
+    const out = new Headers(upstream.headers);
+    for (const [k, v] of Object.entries(cors)) out.set(k, v);
+    return new Response(upstream.body, { status: upstream.status, headers: out });
+  },
+};
