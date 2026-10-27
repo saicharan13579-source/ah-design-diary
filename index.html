@@ -179,6 +179,23 @@ button,input,select,textarea{font:inherit;color:inherit}
 .entry .acts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;font-size:13px}
 .tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
 .tag .sw{width:8px;height:8px;border-radius:2px}
+.parsed{display:grid;gap:6px;margin-top:8px}
+.pl{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--paper,#fff) 55%,transparent)}
+.pl select{font:inherit;font-size:12px;padding:3px 6px;border-radius:8px;border:1px solid var(--line);background:var(--paper,#fff);color:inherit;max-width:100%}
+.pl .mono{margin-left:auto;font-size:12px}
+.proj-block{padding:12px 0;border-bottom:1px solid var(--line)}
+.proj-block:last-child{border-bottom:0}
+.proj-head{display:flex;align-items:center;gap:8px;font-weight:600;margin-bottom:8px}
+.proj-head .mono{margin-left:auto;font-weight:400;color:var(--ink-2);font-size:12px}
+.pipe{display:flex;gap:3px;align-items:center}
+.pipe i{width:22px;height:6px;border-radius:3px;background:var(--line)}
+.pipe i.on{background:var(--accent,#D2601A);opacity:.45}
+.pipe i.cur{background:var(--accent,#D2601A);opacity:1}
+table.prog{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+table.prog th{font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);text-align:left;font-weight:500;padding:6px 8px;border-bottom:1px solid var(--line)}
+table.prog td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.prog tr:last-child td{border-bottom:0}
+table.prog .tags{display:flex;flex-wrap:wrap;gap:4px}
 .pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.06em}
 .st-done{color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
 .st-progress{color:var(--info);background:color-mix(in srgb,var(--info) 14%,transparent)}
@@ -522,7 +539,7 @@ table.team tbody tr:hover{background:var(--paper-2)}
         </div>
         <div class="row2">
           <div class="field"><label for="f-date">Date</label><input type="date" id="f-date" required></div>
-          <div class="field"><span class="lbl" id="hrs-lbl">Hours</span>
+          <div class="field"><span class="lbl" id="hrs-lbl">Total hours</span>
             <div class="stepper" role="group" aria-labelledby="hrs-lbl">
               <button type="button" id="h-minus" aria-label="Half an hour less">−</button>
               <input type="number" id="f-hours" min="0.5" max="16" step="0.5" value="8" aria-labelledby="hrs-lbl">
@@ -530,9 +547,8 @@ table.team tbody tr:hover{background:var(--paper-2)}
             </div>
           </div>
         </div>
-        <div class="field"><label for="f-project">Project</label><input type="text" id="f-project" list="dl-projects" maxlength="60" placeholder="e.g. Gachibowli Residences, Tower B" autocomplete="off"><datalist id="dl-projects"></datalist></div>
-        <div class="field"><span class="lbl">Work stage</span><div class="chips" id="f-stage" role="radiogroup" aria-label="Work stage"></div></div>
-        <div class="field"><label for="f-note">What did you work on?</label><textarea id="f-note" maxlength="1200" placeholder="e.g. Revised level 4–7 floor plates after structural comments; issued wall sections WD-212 to WD-218."></textarea></div>
+        <div class="field"><label for="f-note">Today's work <span style="text-transform:none;font-weight:400">(one line per project)</span></label><textarea id="f-note" rows="4" maxlength="2000" placeholder="UTF project - villa 14 client project&#10;THE WOODS project - villa 10 working drawing&#10;(add 2h to a line to set its hours)"></textarea>
+          <div class="parsed" id="f-parsed" aria-live="polite"></div></div>
         <div class="field"><label for="f-next">Plan for next / blockers <span style="text-transform:none;font-weight:400">(optional)</span></label><input type="text" id="f-next" maxlength="300" placeholder="e.g. Waiting on MEP shaft sizes from consultant"></div>
         <div class="field"><span class="lbl">Status</span><div class="chips" id="f-status" role="radiogroup" aria-label="Status"></div></div>
         <p class="err" id="f-err" role="alert"></p>
@@ -567,6 +583,7 @@ table.team tbody tr:hover{background:var(--paper-2)}
         <div class="card break"><h4>By project <span id="bp-sub"></span></h4><div id="by-project"></div></div>
         <div class="card break"><h4>By work stage <span id="bs-sub"></span></h4><div id="by-stage"></div></div>
       </div>
+      <div class="card break" id="progress-card"><h4>Project progress <span id="pg-sub"></span></h4><div id="progress"></div></div>
       <div class="card break" id="detail-card"><h4 id="detail-title">Team</h4><div id="detail"></div></div>
     </section>
     <p class="foot">Entries are saved for the whole team and update live. Working week Mon–Sat.</p>
@@ -757,7 +774,7 @@ function entryCard(e, showDate){
       ${e.by && e.by !== e.uid ? `<span style="color:var(--ink-2);font-size:12px">logged by ${esc(nameOf(e.by))}</span>` : ""}
       <span class="pill st-${esc(e.status||"progress")}">${esc(STATUS_LBL[e.status]||"In progress")}</span>
       <span class="mono" style="margin-left:auto">${fmtH(+e.hours||0)} h</span></div>
-    <div class="meta" style="margin-top:6px"><span class="tag"><i class="sw" style="background:${catVar(e.project)}"></i>${esc(e.project)}</span><span class="tag">${esc(e.stage||"")}</span></div>
+    <div class="meta" style="margin-top:6px"><span class="tag"><i class="sw" style="background:${catVar(e.project)}"></i>${esc(e.project)}</span>${e.unit?`<span class="tag">${esc(e.unit)}</span>`:""}<span class="tag">${esc(e.stage||"")}</span></div>
     <p class="note">${esc(e.note)}</p>
     ${e.next?`<p class="next">Next: ${esc(e.next)}</p>`:""}
     ${mine?`<div class="acts">${confirm?`<span>Delete this update?</span><button type="button" class="link-btn danger" data-del-yes="${esc(e.id)}">Delete</button><button type="button" class="link-btn" data-del-no="1">Keep</button>`:`<button type="button" class="link-btn" data-edit="${esc(e.id)}">Edit</button><button type="button" class="link-btn" data-del="${esc(e.id)}">Delete</button>`}</div>`:""}
@@ -777,9 +794,68 @@ function renderDay(){
   $("#dl-missing").innerHTML = missing.length ? `<span>Not logged:</span>${missing.map(u => `<span style="display:inline-flex;align-items:center;gap:6px">${avatar(u,"sm ghosted")}${esc(nameOf(u))}</span>`).join("")}` : "";
 }
 
-function renderProjects(){
-  const ps = [...new Set(allEntries().map(e=>e.project).filter(Boolean))].sort();
-  $("#dl-projects").innerHTML = ps.map(p => `<option value="${esc(p)}"></option>`).join("");
+function renderProjects(){ if (document.activeElement !== $("#f-note")) renderParsed(); }
+
+/* ---------------- quick lines: "UTF project - villa 14 client project" ---------------- */
+const STAGE_KEYS = [
+  ["Project Documentation", /\b(document|documentation|mom\b|minutes|report|register|transmittal)/],
+  ["Working Drawings", /\b(working\s*drawing|wd\b|gfc|detail(s|ing)?\b|sections?\b)/],
+  ["3D / Rendering", /\b(3d|render|visuali[sz]|walk\s*through|sketchup|lumion|enscape|modell?ing)/],
+  ["BOQ / Estimation", /\b(boq|estimat|quantit|costing)/],
+  ["Approvals", /\b(approval|sanction|permit|hmda|ghmc|noc\b|dtcp)/],
+  ["Site Visit", /\bsite\b/],
+  ["Client Meeting", /\bclient/],
+  ["Concept", /\bconcept/],
+  ["Schematic Design", /\b(schematic|sd\b)/],
+  ["Design Development", /\b(design\s*development|dd\b)/],
+  ["Coordination", /\b(coordinat|mep\b|structural|consultant)/],
+];
+const UNIT_RE = /\b(villa|tower|block|plot|unit|flat|wing|phase|clubhouse|club\s*house|amenity|level|floor)\b\s*(?:no\.?|#|-)?\s*([a-z]?\d+[a-z]?\b|[a-z]\b)?/i;
+const PIPE = ["Concept","Schematic Design","Design Development","Working Drawings","Approvals"];
+function knownProjects(){ return [...new Set(allEntries().map(e=>e.project).filter(Boolean))]; }
+function tidyProject(p){
+  p = p.replace(/\bproject\b/ig," ").replace(/\s+/g," ").replace(/^[\s\-–—:,|]+|[\s\-–—:,|]+$/g,"").trim();
+  const k = knownProjects().find(x => x.toLowerCase() === p.toLowerCase()); return k || p.toUpperCase();
+}
+function parseLine(raw){
+  let line = String(raw).replace(/^\s*(?:[-•*]|\d+[.)])\s+/, "").trim(); if (!line) return null;
+  let hours = null;
+  line = line.replace(/[\s(,]*(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hours)\b\)?/i, (m,h) => { hours = +h; return ""; }).trim();
+  if (!line) return null;
+  const low = line.toLowerCase();
+  const stage = (STAGE_KEYS.find(([,re]) => re.test(low)) || ["Other"])[0];
+  let proj = "", rest = line;
+  const sep = line.match(/\s+[-–—]\s+|\s*[:|]\s*/);
+  if (sep){ proj = line.slice(0, sep.index); rest = line.slice(sep.index + sep[0].length); }
+  else {
+    const kp = knownProjects().sort((x,y)=>y.length-x.length).find(p => low.startsWith(p.toLowerCase()));
+    const pm = low.match(/^(.*?)\bproject\b/);
+    if (kp){ proj = kp; rest = line.slice(kp.length); }
+    else if (pm && pm[1].trim()){ proj = line.slice(0, pm[1].length); rest = line.slice(pm[0].length); }
+    else { const u = line.search(UNIT_RE); proj = u > 0 ? line.slice(0,u) : line.split(/\s+/).slice(0,2).join(" "); rest = u > 0 ? line.slice(u) : line; }
+  }
+  proj = tidyProject(proj) || "General";
+  const um = rest.match(UNIT_RE) || line.match(UNIT_RE);
+  const unit = um ? (um[1][0].toUpperCase() + um[1].slice(1).toLowerCase().replace(/\s+/," ")) + (um[2] ? " " + um[2].toUpperCase() : "") : "";
+  return { line, project: proj, unit, stage, hours };
+}
+function parsedLines(){
+  return $("#f-note").value.split(/\n|;/).map(parseLine).filter(Boolean).map(p => { if (S.stageOv && S.stageOv[p.line]) p.stage = S.stageOv[p.line]; return p; });
+}
+function splitHours(ps){
+  const total = parseFloat($("#f-hours").value) || 0;
+  const fixed = ps.filter(p => p.hours != null), free = ps.length - fixed.length;
+  const rem = Math.max(0, total - fixed.reduce((t,p)=>t+p.hours,0));
+  const each = free ? Math.max(0.25, Math.round(rem / free * 4) / 4) : 0;
+  return ps.map(p => p.hours != null ? p.hours : each);
+}
+function renderParsed(){
+  const box = $("#f-parsed"); if (!box) return;
+  const ps = parsedLines(); S.lastParsed = ps;
+  if (!ps.length){ box.innerHTML = ""; return; }
+  const hs = splitHours(ps);
+  box.innerHTML = `<p class="who-note" style="margin:0">Saved as ${ps.length} ${ps.length===1?"update":"updates"} (change a stage if it guessed wrong):</p>` +
+    ps.map((p,i) => `<div class="pl"><span class="tag"><i class="sw" style="background:${catVar(p.project)}"></i>${esc(p.project)}</span>${p.unit?`<span class="tag">${esc(p.unit)}</span>`:""}<select data-pl="${i}" aria-label="Work stage for line ${i+1}">${[...STAGES,"Other"].map(st=>`<option${st===p.stage?" selected":""}>${esc(st)}</option>`).join("")}</select><span class="mono">${fmtH(hs[i])} h</span></div>`).join("");
 }
 
 /* summary */
@@ -837,6 +913,7 @@ function renderSummary(){
   }).join("");
 
   $("#by-project").innerHTML = hbars(projH, catVar);
+  renderProgress(list);
   const stH = {}; list.forEach(e => stH[e.stage||"Other"] = (stH[e.stage||"Other"]||0) + (+e.hours||0));
   $("#by-stage").innerHTML = hbars(stH, k => `var(--c${(STAGES.indexOf(k)%6+6)%6+1})`);
   $("#bp-sub").textContent = `${Object.keys(projH).length} projects`; $("#bs-sub").textContent = `${Object.keys(stH).length} stages`;
@@ -858,6 +935,28 @@ function renderSummary(){
   }
 }
 
+function renderProgress(list){
+  const P = {};
+  list.forEach(e => { const p = e.project || "Untitled", u = e.unit || "General", h = +e.hours || 0;
+    const pr = (P[p] ||= { h:0, units:{} }); pr.h += h;
+    const o = (pr.units[u] ||= { h:0, st:{}, last:null, people:new Set() }); o.h += h;
+    const sg = e.stage || "Other"; o.st[sg] = (o.st[sg] || 0) + h; o.people.add(e.uid);
+    if (!o.last || e.date > o.last.date || (e.date === o.last.date && (e.updatedAt||"") > (o.last.updatedAt||""))) o.last = e; });
+  const ps = Object.entries(P).sort((a,b) => b[1].h - a[1].h);
+  $("#pg-sub").textContent = ps.length ? `${ps.length} projects · ${ps.reduce((t,[,v])=>t+Object.keys(v.units).length,0)} villas / units` : "";
+  if (!ps.length){ $("#progress").innerHTML = `<div class="empty">Nothing logged in this period.</div>`; return; }
+  $("#progress").innerHTML = ps.map(([p,v]) => {
+    const us = Object.entries(v.units).sort((a,b) => a[0].localeCompare(b[0], undefined, { numeric:true }));
+    return `<div class="proj-block"><div class="proj-head"><i style="width:10px;height:10px;border-radius:2px;background:${catVar(p)}"></i>${esc(p)}<span class="mono">${fmtH(v.h)} h · ${us.length} ${us.length===1?"unit":"units"}</span></div>
+      <div class="tbl-wrap"><table class="prog"><thead><tr><th>Unit</th><th>Design stage</th><th>Current stage</th><th>Work done</th><th>Status</th><th>Last update</th><th>Who</th></tr></thead><tbody>${us.map(([u,o]) => {
+        const cur = o.last ? o.last.stage : "", ci = PIPE.indexOf(cur);
+        const pipe = PIPE.map((s,i) => `<i class="${s===cur?"cur":o.st[s]?"on":""}" title="${esc(s)}${o.st[s]?": "+fmtH(o.st[s])+" h":""}"></i>`).join("");
+        const tags = Object.entries(o.st).sort((a,b)=>b[1]-a[1]).map(([s,h]) => `<span class="tag">${esc(s)} · ${fmtH(h)} h</span>`).join("");
+        const stt = o.last && o.last.status || "progress";
+        return `<tr><td><b>${esc(u)}</b></td><td><div class="pipe" aria-label="${esc(ci>=0?`Stage ${ci+1} of ${PIPE.length}: ${cur}`:cur)}">${pipe}</div></td><td>${esc(cur)}</td><td><div class="tags">${tags}</div></td><td><span class="pill st-${esc(stt)}">${esc(STATUS_LBL[stt]||"In progress")}</span></td><td class="mono">${o.last ? esc(fmtShort(parse(o.last.date))) : ""}</td><td>${[...o.people].map(x=>avatar(x,"sm")).join("")}</td></tr>`; }).join("")}</tbody></table></div></div>`;
+  }).join("");
+}
+
 function updateHeroLive(){
   const t = $("#hero-live-t");
   if (!S.db){ t.textContent = "Connecting to the diary…"; return; }
@@ -870,7 +969,6 @@ function updateHeroLive(){
 
 /* ---------------- form ---------------- */
 function buildChips(){
-  $("#f-stage").innerHTML = STAGES.map((s,i) => `<label class="chip"><input type="radio" name="stage" id="st-${i}" value="${esc(s)}"${i===3?" checked":""}><span>${esc(s)}</span></label>`).join("");
   $("#f-status").innerHTML = STATUS.map(([v,l],i) => `<label class="chip"><input type="radio" name="status" id="ss-${v}" value="${v}"${v==="progress"?" checked":""}><span>${l}</span></label>`).join("");
   $("#cal-dow").innerHTML = DOW.map(d => `<div class="dow">${d}</div>`).join("");
 }
@@ -888,14 +986,16 @@ function startEdit(id){
   const e = allEntries().find(x=>x.id===id); if (!e) return;
   S.editingId = id;
   const fs = $("#f-for"); if (fs){ const rid = e.uid === S.me ? "" : rosterIdOf(e.uid) || ""; if ([...fs.options].some(o => o.value === rid)) fs.value = rid; }
-  $("#f-date").value = e.date; $("#f-hours").value = e.hours; $("#f-project").value = e.project || ""; $("#f-note").value = e.note || ""; $("#f-next").value = e.next || "";
-  const st = [...document.querySelectorAll('input[name=stage]')].find(i=>i.value===e.stage); if (st) st.checked = true;
+  $("#f-date").value = e.date; $("#f-hours").value = e.hours; $("#f-next").value = e.next || "";
+  const ln = e.line || `${e.project || ""}${e.unit ? " - " + e.unit : " -"} ${e.note || ""}`.trim();
+  S.stageOv = {}; $("#f-note").value = ln; const pl = parseLine(ln); if (pl && e.stage) S.stageOv[pl.line] = e.stage;
+  renderParsed();
   const ss = document.getElementById("ss-"+e.status); if (ss) ss.checked = true;
   updateFormTitle();
   $("#entry-form").scrollIntoView({behavior: reduce?"auto":"smooth", block:"start"});
   $("#f-note").focus({preventScroll:true});
 }
-function cancelEdit(){ S.editingId = null; $("#f-note").value = ""; $("#f-next").value = ""; $("#f-date").value = S.selDate; $("#f-err").textContent = ""; updateFormTitle(); }
+function cancelEdit(){ S.editingId = null; S.stageOv = {}; renderParsed(); $("#f-note").value = ""; $("#f-next").value = ""; $("#f-date").value = S.selDate; $("#f-err").textContent = ""; updateFormTitle(); }
 function disableForm(msg){
   [...$("#entry-form").elements].forEach(el => el.disabled = true);
   $("#f-err").textContent = msg;
@@ -904,9 +1004,8 @@ async function saveEntry(ev){
   ev.preventDefault();
   const err = $("#f-err"); err.textContent = "";
   if (!S.db || !S.me){ err.textContent = "Sign in with your work email to save updates."; return; }
-  const date = $("#f-date").value, project = $("#f-project").value.trim(), note = $("#f-note").value.trim();
-  const hours = Math.round(parseFloat($("#f-hours").value)*2)/2;
-  const stage = (document.querySelector('input[name=stage]:checked')||{}).value || "Other";
+  const date = $("#f-date").value, lines = parsedLines(), lineHours = splitHours(lines);
+  const hours = lineHours.reduce((t,h)=>t+h,0);
   const status = (document.querySelector('input[name=status]:checked')||{}).value || "progress";
   const needName = !(S.people[S.me] && S.people[S.me].name);
   let name = $("#f-name").value.trim(), role = $("#f-role").value.trim(), rosterId = null;
@@ -918,26 +1017,24 @@ async function saveEntry(ev){
   }
   if (needName && !name){ err.textContent = "Add your name so the team knows who logged this."; $("#f-name").focus(); return; }
   if (!date){ err.textContent = "Pick the date this work was done."; return; }
-  if (!project){ err.textContent = "Add the project name."; $("#f-project").focus(); return; }
-  if (!(hours >= 0.5 && hours <= 16)){ err.textContent = "Hours should be between 0.5 and 16."; return; }
-  if (note.length < 3){ err.textContent = "Describe what you worked on."; $("#f-note").focus(); return; }
+  if (!lines.length){ err.textContent = "Write what you worked on, one line per project, e.g. UTF project - villa 14 client project."; $("#f-note").focus(); return; }
+  if (!(hours > 0 && hours <= 16)){ err.textContent = "Total hours should be between 0.5 and 16."; return; }
   const btn = $("#f-submit"); btn.disabled = true;
   const now = new Date().toISOString();
   const forId = $("#for-wrap").hidden ? "" : $("#f-for").value;
-  const data = { uid: forId ? uidForRoster(forId) : S.me, by:S.me, date, project, stage, status, hours, note, next:$("#f-next").value.trim(), updatedAt:now };
+  const base = { uid: forId ? uidForRoster(forId) : S.me, by:S.me, date, status, next:$("#f-next").value.trim(), updatedAt:now };
+  const rows = lines.map((p,i) => Object.assign({}, base, { project:p.project, unit:p.unit, stage:p.stage, hours:lineHours[i], note:p.line, line:p.line }));
   try {
     if (needName) await S.db.doc("people/"+S.me).set({ name, role, rosterId, updatedAt:now });
+    let i0 = 0;
     if (S.editingId){
       const prev = allEntries().find(x=>x.id===S.editingId);
-      data.createdAt = (prev && prev.createdAt) || now;
-      await S.db.collection("entries").doc(S.editingId).set(data);
-      toast("Update saved");
-    } else {
-      data.createdAt = now;
-      await S.db.collection("entries").add(data);
-      toast(date === todayStr ? "Today's update is in. Nice work." : `Saved for ${fmtShort(parse(date))}`);
+      rows[0].createdAt = (prev && prev.createdAt) || now;
+      await S.db.collection("entries").doc(S.editingId).set(rows[0]); i0 = 1;
     }
-    S.editingId = null; $("#f-note").value = ""; $("#f-next").value = "";
+    for (let i = i0; i < rows.length; i++){ rows[i].createdAt = now; await S.db.collection("entries").add(rows[i]); }
+    toast(S.editingId ? "Update saved" : date === todayStr ? (rows.length > 1 ? `${rows.length} updates saved. Nice work.` : "Today's update is in. Nice work.") : `Saved for ${fmtShort(parse(date))}`);
+    S.editingId = null; S.stageOv = {}; $("#f-note").value = ""; $("#f-next").value = ""; renderParsed();
     S.selDate = date; const d = parse(date);
     if (d.getMonth() !== S.calMonth.getMonth() || d.getFullYear() !== S.calMonth.getFullYear()){ S.calMonth = new Date(d.getFullYear(), d.getMonth(), 1); ensureSubs(); }
     updateFormTitle(); schedule();
@@ -960,8 +1057,8 @@ async function downloadCsv(){
   let list = between(a,b); if (S.sumPerson !== "team") list = list.filter(e=>e.uid===S.sumPerson);
   list.sort((x,y) => x.date.localeCompare(y.date) || nameOf(x.uid).localeCompare(nameOf(y.uid)));
   const q = v => `"${String(v??"").replace(/"/g,'""')}"`;
-  const rows = [["Date","Person","Role","Project","Stage","Hours","Status","Update","Next / blockers"]]
-    .concat(list.map(e => [e.date, nameOf(e.uid), roleOf(e.uid), e.project, e.stage, e.hours, STATUS_LBL[e.status]||e.status, e.note, e.next||""]));
+  const rows = [["Date","Person","Role","Project","Unit","Stage","Hours","Status","Update","Next / blockers"]]
+    .concat(list.map(e => [e.date, nameOf(e.uid), roleOf(e.uid), e.project, e.unit||"", e.stage, e.hours, STATUS_LBL[e.status]||e.status, e.note, e.next||""]));
   const who = S.sumPerson === "team" ? "studio" : nameOf(S.sumPerson).replace(/\s+/g,"-").toLowerCase();
   try { await S.dl.save({ filename:`site-diary-${who}-${a}-to-${b}.csv`, data: rows.map(r=>r.map(q).join(",")).join("\r\n") }); toast("CSV saved"); }
   catch(e){ if (e && e.code !== "declined") toast("Download isn't available here."); }
@@ -979,6 +1076,11 @@ function wire(){
   $("#h-minus").onclick = () => { const i = $("#f-hours"); i.value = Math.max(0.5, (+i.value||0) - 0.5); };
   $("#h-plus").onclick = () => { const i = $("#f-hours"); i.value = Math.min(16, (+i.value||0) + 0.5); };
   $("#entry-form").addEventListener("submit", saveEntry);
+  S.stageOv = {};
+  $("#f-note").addEventListener("input", renderParsed);
+  $("#f-hours").addEventListener("input", renderParsed);
+  ["#h-minus","#h-plus"].forEach(id => $(id).addEventListener("click", () => setTimeout(renderParsed, 0)));
+  $("#f-parsed").addEventListener("change", ev => { const i = ev.target.dataset && ev.target.dataset.pl; if (i == null || !S.lastParsed || !S.lastParsed[i]) return; S.stageOv[S.lastParsed[i].line] = ev.target.value; });
   $("#f-cancel").onclick = cancelEdit;
   $("#cal-prev").onclick = () => { S.calMonth = new Date(S.calMonth.getFullYear(), S.calMonth.getMonth()-1, 1); ensureSubs(); schedule(); };
   $("#cal-next").onclick = () => { S.calMonth = new Date(S.calMonth.getFullYear(), S.calMonth.getMonth()+1, 1); ensureSubs(); schedule(); };
