@@ -546,7 +546,7 @@ table.team tbody tr:hover{background:var(--paper-2)}
           <div class="field"><span class="lbl" id="hrs-lbl">Total hours</span>
             <div class="stepper" role="group" aria-labelledby="hrs-lbl">
               <button type="button" id="h-minus" aria-label="Half an hour less">−</button>
-              <input type="number" id="f-hours" min="0.5" max="16" step="0.5" value="8" aria-labelledby="hrs-lbl">
+              <input type="number" id="f-hours" min="0.5" max="16" step="0.5" value="9" aria-labelledby="hrs-lbl">
               <button type="button" id="h-plus" aria-label="Half an hour more">+</button>
             </div>
           </div>
@@ -904,7 +904,7 @@ function renderSummary(){
   const stackColor = k => team ? colorOf(k) : catVar(k);
   const byDay = {}; list.forEach(e => { const m = (byDay[e.date] ||= {}); m[stackKey(e)] = (m[stackKey(e)]||0) + (+e.hours||0); });
   const totals = days.map(d => Object.values(byDay[d]||{}).reduce((s,v)=>s+v,0));
-  const rawMax = Math.max(8, ...totals); const step = rawMax <= 12 ? 4 : rawMax <= 24 ? 8 : rawMax <= 48 ? 12 : 24; const max = Math.ceil(rawMax/step)*step;
+  const rawMax = Math.max(9, ...totals); const step = rawMax <= 12 ? 4 : rawMax <= 24 ? 8 : rawMax <= 48 ? 12 : 24; const max = Math.ceil(rawMax/step)*step;
   $("#chart-sub").textContent = team ? "stacked by person" : "stacked by project";
   let grid = ""; let yl = "";
   for (let v=0; v<=max; v+=step){ const pct = (1 - v/max) * 100; const top = `calc(${pct}% * (100% - 20px) / 100%)`;
@@ -1002,7 +1002,7 @@ function startEdit(id){
   $("#entry-form").scrollIntoView({behavior: reduce?"auto":"smooth", block:"start"});
   $("#f-note").focus({preventScroll:true});
 }
-function cancelEdit(){ S.editingId = null; S.stageOv = {}; renderParsed(); $("#f-note").value = ""; $("#f-next").value = ""; $("#f-date").value = S.selDate; $("#f-err").textContent = ""; updateFormTitle(); }
+function cancelEdit(){ S.editingId = null; S.stageOv = {}; $("#f-hours").value = 9; renderParsed(); $("#f-note").value = ""; $("#f-next").value = ""; $("#f-date").value = S.selDate; $("#f-err").textContent = ""; updateFormTitle(); }
 function disableForm(msg){
   [...$("#entry-form").elements].forEach(el => el.disabled = true);
   $("#f-err").textContent = msg;
@@ -1041,7 +1041,7 @@ async function saveEntry(ev){
     }
     for (let i = i0; i < rows.length; i++){ rows[i].createdAt = now; await S.db.collection("entries").add(rows[i]); }
     toast(S.editingId ? "Update saved" : date === todayStr ? (rows.length > 1 ? `${rows.length} updates saved. Nice work.` : "Today's update is in. Nice work.") : `Saved for ${fmtShort(parse(date))}`);
-    S.editingId = null; S.stageOv = {}; $("#f-note").value = ""; $("#f-next").value = ""; renderParsed();
+    S.editingId = null; S.stageOv = {}; $("#f-hours").value = 9; $("#f-note").value = ""; $("#f-next").value = ""; renderParsed();
     S.selDate = date; const d = parse(date);
     if (d.getMonth() !== S.calMonth.getMonth() || d.getFullYear() !== S.calMonth.getFullYear()){ S.calMonth = new Date(d.getFullYear(), d.getMonth(), 1); ensureSubs(); }
     updateFormTitle(); schedule();
