@@ -609,7 +609,7 @@ const fmtShort = d => d.toLocaleDateString("en-IN",{day:"numeric",month:"short"}
 const fmtH = h => (Math.round(h*10)/10).toString();
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const STAGES = ["Concept","Schematic Design","Design Development","Working Drawings","3D / Rendering","Site Visit","Client Meeting","BOQ / Estimation","Approvals","Coordination"];
+const STAGES = ["Concept","Schematic Design","Design Development","Working Drawings","3D / Rendering","Site Visit","Client Meeting","BOQ / Estimation","Approvals","Coordination","Project Documentation"];
 const STATUS = [["done","Done"],["progress","In progress"],["review","For review"],["blocked","Blocked"]];
 const STATUS_LBL = Object.fromEntries(STATUS);
 
