@@ -62,6 +62,18 @@
         $("#ah-forgot").disabled = false;
         msg.textContent = error ? (/rate/i.test(error.message) ? "Too many emails just now (Supabase allows 2 an hour). Try again later." : error.message)
           : `Link sent to ${email}. Open it on this computer; the diary will ask you to choose a new password.`;
+        if (!error && CFG.proxyUrl && !$("#ah-paste")){
+          const w = document.createElement("div");
+          w.innerHTML = `<label for="ah-paste" style="margin-top:12px">If the email link won't open, paste it here</label><input id="ah-paste" type="url" placeholder="Right-click Log In in the email → Copy link, then paste">`;
+          msg.after(w);
+          $("#ah-paste").addEventListener("input", ev => {
+            let v = ev.target.value.trim(); if (!v) return;
+            try { let u = new URL(v); const inner = u.searchParams.get("url"); if (inner) u = new URL(inner);
+              if (!/\/auth\/v1\/verify/.test(u.pathname)){ msg.textContent = "That isn't the sign-in link from the email."; return; }
+              location.href = CFG.proxyUrl.replace(/\/$/,"") + u.pathname + u.search;
+            } catch(e){ msg.textContent = "That isn't a link. Copy the Log In link from the email."; }
+          });
+        }
       };
       form.addEventListener("submit", async ev => {
         ev.preventDefault(); msg.textContent = "";

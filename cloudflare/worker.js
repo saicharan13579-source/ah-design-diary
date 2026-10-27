@@ -17,7 +17,7 @@ export default {
       "Vary": "Origin",
     };
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
-    if (!ALLOWED_PATHS.test(url.pathname)) return new Response("Not found", { status: 404, headers: cors });
+    if (!ALLOWED_PATHS.test(url.pathname)) return new Response("AH diary relay OK", { status: 200, headers: cors });
     const headers = new Headers(req.headers);
     headers.delete("host"); headers.delete("origin"); headers.delete("referer");
     const upstream = await fetch(UPSTREAM + url.pathname + url.search, {
