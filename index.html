@@ -552,7 +552,7 @@ table.team tbody tr:hover{background:var(--paper-2)}
             </div>
           </div>
         </div>
-        <div class="field"><label for="f-note">Today's work <span style="text-transform:none;font-weight:400">(one line per project)</span></label><textarea id="f-note" rows="4" maxlength="2000" placeholder="UTF project - villa 14 client project&#10;THE WOODS project - villa 10 working drawing&#10;(add 2h to a line to set its hours)"></textarea>
+        <div class="field"><label for="f-note">Today's work <span style="text-transform:none;font-weight:400">(write it all; the diary sorts it by project)</span></label><textarea id="f-note" rows="6" maxlength="4000" placeholder="e.g. Coordinated with the UTF client on villa E40 and E51. Revised working drawings for THE WOODS villa 10, 3h. KONAK AX33 and AX38 client meeting. Updated the S-73 3D renders."></textarea>
           <div class="parsed" id="f-parsed" aria-live="polite"></div></div>
         <div class="field"><label for="f-next">Plan for next / blockers <span style="text-transform:none;font-weight:400">(optional)</span></label><input type="text" id="f-next" maxlength="300" placeholder="e.g. Waiting on MEP shaft sizes from consultant"></div>
         <div class="field"><span class="lbl">Status</span><div class="chips" id="f-status" role="radiogroup" aria-label="Status"></div></div>
@@ -849,15 +849,37 @@ function parseLine(raw){
   const fp = findProject(line);
   const project = fp ? fp.p : (/\b(general|office|admin|webpage|website|training|meeting)\b/i.test(low) ? GENERAL : "");
   const rest = fp ? line.slice(0, fp.i) + " " + line.slice(fp.i + fp.len) : line;
-  const um = rest.match(UNIT_RE) || rest.match(/\b([a-z]{1,2}\d{1,3})\b/i);
-  let unit = "";
-  if (um && um[0].match(UNIT_RE)) unit = (um[1][0].toUpperCase() + um[1].slice(1).toLowerCase().replace(/\s+/," ")) + (um[2] ? " " + um[2].toUpperCase() : "");
-  else if (um) unit = "Villa " + um[1].toUpperCase();
+  const units = [];
+  for (const m of rest.matchAll(new RegExp(UNIT_RE.source, "gi"))) units.push((m[1][0].toUpperCase() + m[1].slice(1).toLowerCase().replace(/\s+/," ")) + (m[2] ? " " + m[2].toUpperCase() : ""));
+  for (const m of rest.matchAll(/\b([a-z]{1,2}\d{1,3})\b/gi)){ const c = m[1].toUpperCase(); if (!units.some(u => u.endsWith(" " + c))) units.push("Villa " + c); }
+  const unit = [...new Set(units)].join(", ");
   return { line, project, unit, stage, stages, hours };
 }
+function splitSegments(text){
+  return String(text).split(/\n+/).flatMap(par => par.split(/;\s*|(?<=[.!?])\s+(?=[A-Z])/))
+    .map(x => x.trim().replace(/^[\s,.]+|[\s,.;]+$/g, "")).filter(x => x.length > 1);
+}
+/* a paragraph → one update per project (sentences without a project join the one before) */
 function parsedLines(){
-  return $("#f-note").value.split(/\n|;/).map(parseLine).filter(Boolean).map(p => { if (S.projOv && S.projOv[p.line]) p.project = S.projOv[p.line];
-    if (S.stageOv && S.stageOv[p.line] && S.stageOv[p.line].length){ p.stages = S.stageOv[p.line].slice(); p.stage = p.stages.join(", "); } return p; });
+  const segs = splitSegments($("#f-note").value).map(parseLine).filter(Boolean);
+  let last = "";
+  segs.forEach(p => { if (S.projOv && S.projOv[p.line]) p.project = S.projOv[p.line]; if (p.project) last = p.project; else if (last) p.project = last; });
+  const G = new Map();
+  segs.forEach(p => {
+    const k = p.project || "";
+    const g = G.get(k) || { project:k, units:[], stages:[], parts:[], segLines:[], hours:null };
+    g.parts.push(p.line); g.segLines.push(p.line);
+    p.unit.split(", ").filter(Boolean).forEach(u => { if (!g.units.includes(u)) g.units.push(u); });
+    p.stages.forEach(st => { if (!g.stages.includes(st)) g.stages.push(st); });
+    if (p.hours != null) g.hours = (g.hours || 0) + p.hours;
+    G.set(k, g);
+  });
+  return [...G.values()].map(g => {
+    let stages = STAGES.filter(st => g.stages.includes(st)); if (!stages.length) stages = ["Other"];
+    const ov = S.stageOv && S.stageOv["p:" + g.project]; if (ov && ov.length) stages = ov.slice();
+    const line = g.parts.map(t => /[.!?]$/.test(t) ? t : t + ".").join(" ");
+    return { line, project:g.project, unit:g.units.join(", "), stages, stage:stages.join(", "), hours:g.hours, segLines:g.segLines };
+  });
 }
 function stagesOf(e){ return Array.isArray(e.stages) && e.stages.length ? e.stages : String(e.stage || "Other").split(/\s*,\s*/).filter(Boolean);
 }
@@ -873,8 +895,8 @@ function renderParsed(){
   const ps = parsedLines(); S.lastParsed = ps;
   if (!ps.length){ box.innerHTML = ""; return; }
   const hs = splitHours(ps);
-  box.innerHTML = `<p class="who-note" style="margin:0">Saved as ${ps.length} ${ps.length===1?"update":"updates"} (tap stages to add or remove; pick as many as you like, or All):</p>` +
-    ps.map((p,i) => `<div class="pl"><select data-pj="${i}" aria-label="Project for line ${i+1}"${p.project?"":` style="border-color:var(--warn,#C2410C)"`}><option value="">Choose project…</option>${[...projectList(), GENERAL].map(x=>`<option${x===p.project?" selected":""}>${esc(x)}</option>`).join("")}${p.project && ![...projectList(),GENERAL].includes(p.project)?`<option selected>${esc(p.project)}</option>`:""}</select>${p.unit?`<span class="tag">${esc(p.unit)}</span>`:""}<span class="mono">${fmtH(hs[i])} h</span><div class="stg" role="group" aria-label="Work stages for line ${i+1}"><button type="button" class="all" data-pl="${i}" data-st="*" aria-pressed="${STAGES.every(st=>p.stages.includes(st))}">All</button>${STAGES.map(st=>`<button type="button" data-pl="${i}" data-st="${esc(st)}" aria-pressed="${p.stages.includes(st)}">${esc(st)}</button>`).join("")}</div></div>`).join("");
+  box.innerHTML = `<p class="who-note" style="margin:0">Sorted into ${ps.length} ${ps.length===1?"project":"projects"} (pick a project if it couldn't tell; tap stages to add or remove; pick as many as you like, or All):</p>` +
+    ps.map((p,i) => `<div class="pl"><select data-pj="${i}" aria-label="Project for line ${i+1}"${p.project?"":` style="border-color:var(--warn,#C2410C)"`}><option value="">Choose project…</option>${[...projectList(), GENERAL].map(x=>`<option${x===p.project?" selected":""}>${esc(x)}</option>`).join("")}${p.project && ![...projectList(),GENERAL].includes(p.project)?`<option selected>${esc(p.project)}</option>`:""}</select>${p.unit?`<span class="tag">${esc(p.unit)}</span>`:""}<span class="mono">${fmtH(hs[i])} h</span><p class="who-note" style="margin:0;width:100%;font-size:12.5px">${esc(p.line)}</p><div class="stg" role="group" aria-label="Work stages for line ${i+1}"><button type="button" class="all" data-pl="${i}" data-st="*" aria-pressed="${STAGES.every(st=>p.stages.includes(st))}">All</button>${STAGES.map(st=>`<button type="button" data-pl="${i}" data-st="${esc(st)}" aria-pressed="${p.stages.includes(st)}">${esc(st)}</button>`).join("")}</div></div>`).join("");
 }
 
 /* summary */
@@ -1007,7 +1029,9 @@ function startEdit(id){
   const fs = $("#f-for"); if (fs){ const rid = e.uid === S.me ? "" : rosterIdOf(e.uid) || ""; if ([...fs.options].some(o => o.value === rid)) fs.value = rid; }
   $("#f-date").value = e.date; $("#f-hours").value = e.hours; $("#f-next").value = e.next || "";
   const ln = e.line || `${e.project || ""}${e.unit ? " - " + e.unit : " -"} ${e.note || ""}`.trim();
-  S.stageOv = {}; S.projOv = {}; $("#f-note").value = ln; const pl = parseLine(ln); if (pl){ S.stageOv[pl.line] = stagesOf(e); if ([...projectList(), GENERAL].includes(e.project)) S.projOv[pl.line] = e.project; }
+  S.stageOv = {}; S.projOv = {}; $("#f-note").value = ln; const okP = [...projectList(), GENERAL].includes(e.project);
+  if (okP) splitSegments(ln).forEach(l => { const q = parseLine(l); if (q) S.projOv[q.line] = e.project; });
+  S.stageOv["p:" + (okP ? e.project : "")] = stagesOf(e);
   renderParsed();
   const ss = document.getElementById("ss-"+e.status); if (ss) ss.checked = true;
   updateFormTitle();
@@ -1102,14 +1126,14 @@ function wire(){
   $("#f-hours").addEventListener("input", renderParsed);
   ["#h-minus","#h-plus"].forEach(id => $(id).addEventListener("click", () => setTimeout(renderParsed, 0)));
   S.projOv = {};
-  $("#f-parsed").addEventListener("change", ev => { const i = ev.target.dataset && ev.target.dataset.pj; if (i == null || !S.lastParsed || !S.lastParsed[i]) return; S.projOv[S.lastParsed[i].line] = ev.target.value; renderParsed(); });
+  $("#f-parsed").addEventListener("change", ev => { const i = ev.target.dataset && ev.target.dataset.pj; if (i == null || !S.lastParsed || !S.lastParsed[i]) return; S.lastParsed[i].segLines.forEach(l => S.projOv[l] = ev.target.value); renderParsed(); });
   $("#f-parsed").addEventListener("click", ev => {
     const b = ev.target.closest("button[data-st]"); if (!b || !S.lastParsed) return;
     const p = S.lastParsed[b.dataset.pl]; if (!p) return;
     let cur = p.stages.filter(x => x !== "Other"); const st = b.dataset.st;
     if (st === "*") cur = STAGES.every(x => cur.includes(x)) ? [] : STAGES.slice();
     else cur = cur.includes(st) ? cur.filter(x => x !== st) : STAGES.filter(x => cur.includes(x) || x === st);
-    S.stageOv[p.line] = cur.length ? cur : ["Other"]; renderParsed();
+    S.stageOv["p:" + p.project] = cur.length ? cur : ["Other"]; renderParsed();
   });
   $("#f-cancel").onclick = cancelEdit;
   $("#cal-prev").onclick = () => { S.calMonth = new Date(S.calMonth.getFullYear(), S.calMonth.getMonth()-1, 1); ensureSubs(); schedule(); };
