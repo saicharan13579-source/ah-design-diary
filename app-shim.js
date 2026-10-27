@@ -207,6 +207,8 @@
     async id(){ await ensureSession(); return uid(); },
     async isOwner(){ await ensureSession(); return !!ownerEmail && email() === ownerEmail; },
     async canEdit(){ return user.isOwner(); },
+    async canLogAll(){ await ensureSession(); if (!sb || !email()) return false;
+      try { const { data } = await sb.from("team_access").select("is_owner,can_log_all").eq("email", email()).maybeSingle(); return !!(data && (data.is_owner || data.can_log_all)); } catch(e){ return false; } },
     async can(name){ await ensureSession(); return name === "data.write" ? !!uid() : false; },
     async me(){ await ensureSession(); const o = await user.isOwner(); return { id: uid(), name: email().split("@")[0], email: email() || null, avatarUrl:"", color: colorFor(uid()), isOwner:o, canEdit:o }; },
     async name(){ return (await user.me()).name; },

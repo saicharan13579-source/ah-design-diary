@@ -36,7 +36,7 @@ GitHub Pages updates within about a minute. Open the site, enter your email, typ
 ## Using it
 
 - **First visit:** click **First time here? Create your password**, enter your work email and choose a password. Only emails in `team_access` can do this. Then each person chooses their name under **Who are you?** and logs their update.
-- **Anusha** sees **Logging for** and can file updates under Sai Charan's name.
+- **Anusha** can log, edit and delete updates for **everyone** (choose the person in **Logging for**). Set by `can_log_all` in `team_access`.
 - **Only the owner email** can change the team list, enforced by the database rules.
 - **Adding a person later:** add their email to the `team_access` table (Supabase → Table Editor),
   then add them with the **Team list** button on the site.

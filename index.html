@@ -655,7 +655,7 @@ function myRosterId(){ const pp = S.people[S.me]; if (pp && pp.rosterId) return 
 function rosterIdOf(uid){ if (!uid) return null; if (uid.startsWith("r:")) return uid.slice(2); const pp = S.people[uid]; return pp && pp.rosterId || null; }
 function uidForRoster(rid){ const u = Object.keys(S.people).find(k => S.people[k] && S.people[k].rosterId === rid); return u || "r:" + rid; }
 function renderFor(){
-  const mine = myRosterId(), opts = mine ? S.roster.filter(m => m.loggedBy === mine) : [], sel = $("#f-for");
+  const mine = myRosterId(), opts = S.logAll ? S.roster.filter(m => m.id !== mine) : mine ? S.roster.filter(m => m.loggedBy === mine) : [], sel = $("#f-for");
   const sig = opts.map(m => m.id + m.name).join("|") + "|" + nameOf(S.me || "");
   if (sel.dataset.sig !== sig){ const cur = sel.value; sel.dataset.sig = sig;
     sel.innerHTML = `<option value="">Myself</option>` + opts.map(m => `<option value="${esc(m.id)}">${esc(m.name)}${m.role ? " · " + esc(m.role.split(" · ")[0]) : ""}</option>`).join("");
@@ -749,7 +749,7 @@ function renderCalendar(){
 }
 
 function entryCard(e, showDate){
-  const mine = (e.uid === S.me || (e.by && e.by === S.me)) && S.canWrite !== false;
+  const mine = (S.logAll || e.uid === S.me || (e.by && e.by === S.me)) && S.canWrite !== false;
   const confirm = S.confirmDel === e.id;
   return `<article class="entry">${avatar(e.uid,"lg")}<div style="min-width:0">
     <div class="meta"><span class="who">${esc(nameOf(e.uid))}</span>${roleOf(e.uid)?`<span style="color:var(--ink-2)">${esc(roleOf(e.uid))}</span>`:""}
@@ -1039,7 +1039,7 @@ async function init(){
   S.db = db; S.user = user; S.dl = dl;
   if (dl) $("#csv").hidden = false;
   if (user){
-    try { S.me = await user.id(); const cw = await user.can("data.write"); if (cw === false) S.canWrite = false; S.canAdmin = await user.canEdit(); S.isOwner = await user.isOwner(); } catch(e){}
+    try { S.me = await user.id(); const cw = await user.can("data.write"); if (cw === false) S.canWrite = false; S.canAdmin = await user.canEdit(); S.isOwner = await user.isOwner(); S.logAll = user.canLogAll ? await user.canLogAll() : false; } catch(e){}
   }
   if (db && S.isOwner) $("#manage-team").hidden = false;
   if (db){ try { db.doc("env/hyderabad").onSnapshot(sn => { S.env = sn.exists ? sn.data() : null; computeEnv(); }, () => {}); } catch(e){} }
