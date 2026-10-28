@@ -194,7 +194,7 @@ const LAB = {rel:"Released", late:"Past GFC date", client:"Pending from client",
 const COL = {rel:"var(--accent)", late:"var(--warn)", client:"var(--warn)", due:"var(--due)"};
 const ON = a => /on board/i.test(a.s);
 function cat(d){
-  if (/released|issued|approved/i.test(d.s) && !/not released/i.test(d.s)) return "rel";
+  if (/released|issued|approved|received/i.test(d.s) && !/not released/i.test(d.s)) return "rel";
   if (/client/i.test(d.s)) return "client";
   return isDate(d.dt) && d.dt < TODAY ? "late" : "due";
 }
