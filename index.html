@@ -558,7 +558,7 @@ table.team tbody tr:hover{background:var(--paper-2)}
           </div>
         </div>
         <div class="row2">
-          <div class="field"><label for="f-project">Project</label><input type="text" id="f-project" list="dl-projects" maxlength="40" placeholder="Choose or type" autocomplete="off"><datalist id="dl-projects"></datalist></div>
+          <div class="field"><label for="f-project">Project</label><select id="f-project"><option value="">Choose project…</option></select></div>
           <div class="field"><label for="f-unit">Villa / unit <span style="text-transform:none;font-weight:400">(optional)</span></label><input type="text" id="f-unit" maxlength="60" placeholder="e.g. Villa 14, E40" autocomplete="off"></div>
         </div>
         <div class="field"><span class="lbl">Work stage <span style="text-transform:none;font-weight:400">(pick one or more, or All)</span></span><div class="stg-form" id="f-stage" role="group" aria-label="Work stages"></div></div>
@@ -617,7 +617,7 @@ table.team tbody tr:hover{background:var(--paper-2)}
     <h3>Team list &amp; projects</h3>
     <p class="who-note" style="margin:0 0 12px">One person per line, as name, role. Each person picks their name the first time they log an update.</p>
     <div class="field"><label for="t-list">Team members</label><textarea id="t-list" rows="8" placeholder="Ananya Rao, Principal Architect&#10;Vikram Shah, Project Architect"></textarea></div>
-    <div class="field"><label for="t-projects">Projects <span style="text-transform:none;font-weight:400">(one per line)</span></label><textarea id="t-projects" rows="6" placeholder="UTF&#10;KONAK&#10;S-73&#10;EDGE"></textarea></div>
+    <div class="field"><label for="t-projects">Projects <span style="text-transform:none;font-weight:400">(one per line)</span></label><textarea id="t-projects" rows="6" placeholder="UTF&#10;KONAK&#10;M82&#10;IQON WEST"></textarea></div>
     <div class="form-actions"><button class="btn" type="submit">Save team list</button><button class="btn ghost" type="button" id="t-cancel">Cancel</button></div>
   </form>
 </div>
@@ -682,7 +682,12 @@ function ensureSub(key){
 function ensureSubs(){ ensureSub("cal"); ensureSub("sum"); ensureSub("now"); }
 function allEntries(){ const m = new Map(); for (const k in S.subs) for (const [id,e] of S.subs[k].docs) m.set(id,e);
   const claim = {}; for (const [u,pp] of Object.entries(S.people)){ const r = ridOf(pp); if (r) claim["r:" + r] = u; }
-  return [...m.values()].map(e => e && claim[e.uid] ? Object.assign({}, e, { uid:claim[e.uid] }) : e); }
+  return [...m.values()].map(e => { if (!e) return e; const fix = {};
+    if (claim[e.uid]) fix.uid = claim[e.uid];
+    const cp = canonProject(e.project); if (cp !== e.project) fix.project = cp;
+    return Object.keys(fix).length ? Object.assign({}, e, fix) : e; }); }
+const projKey = p => String(p || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+function canonProject(p){ if (!p) return p; const k = projKey(p); const hit = [...projectList(), GENERAL].find(x => projKey(x) === k); return hit || p; }
 const normName = n => String(n || "").toLowerCase().replace(/[^a-z]+/g, " ").trim();
 function ridOf(pp){
   if (!pp) return null; if (pp.rosterId) return pp.rosterId;
@@ -817,10 +822,11 @@ function renderDay(){
 }
 
 function renderProjects(){
-  const used = allEntries().map(e => e.project).filter(Boolean);
-  const ps = [...new Set([...projectList(), GENERAL, ...used.filter(x => x.length <= 30)])];
-  const html = ps.map(x => `<option value="${esc(x)}"></option>`).join(""); const dl = $("#dl-projects");
-  if (dl && dl.dataset.sig !== html){ dl.dataset.sig = html; dl.innerHTML = html; }
+  const sel = $("#f-project"); if (!sel) return;
+  const cur = sel.value, ps = [...new Set([...projectList().filter(x => x !== GENERAL), GENERAL])];
+  if (cur && !ps.includes(cur)) ps.push(cur);
+  const html = `<option value="">Choose project…</option>` + ps.map(x => `<option value="${esc(x)}">${esc(x === GENERAL ? "Other" : x)}</option>`).join("");
+  if (sel.dataset.sig !== html){ sel.dataset.sig = html; sel.innerHTML = html; sel.value = cur; }
   renderParsed();
 }
 
@@ -840,9 +846,9 @@ const STAGE_KEYS = [
 ];
 const UNIT_RE = /\b(villa|tower|block|plot|unit|flat|wing|phase|clubhouse|club\s*house|amenity|level|floor)\b\s*(?:no\.?|#|-)?\s*([a-z]?\d+[a-z]?\b|[a-z]\b)?/i;
 const PIPE = ["Concept","Schematic Design","Design Development","Working Drawings","Approvals"];
-const DEFAULT_PROJECTS = ["UTF","KONAK","S-73","EDGE","THE WOODS"];
-const GENERAL = "GENERAL";
-function projectList(){ return (S.projects && S.projects.length ? S.projects : DEFAULT_PROJECTS); }
+const DEFAULT_PROJECTS = ["UTF","KONAK","M82","IQON WEST","EDGE","BITC","S73","THE WOODS"];
+const GENERAL = "OTHER";
+function projectList(){ const saved = (S.projects || []).filter(x => !DEFAULT_PROJECTS.some(d => d.replace(/\W/g,"") === String(x).replace(/\W/g,""))); return [...DEFAULT_PROJECTS, ...saved.filter(x => x !== GENERAL && x !== "GENERAL")]; }
 function knownProjects(){ return projectList(); }
 const rxEsc = t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 function findProject(line){
@@ -1027,7 +1033,7 @@ function startEdit(id){
   S.editingId = id;
   const fs = $("#f-for"); if (fs){ const rid = e.uid === S.me ? "" : rosterIdOf(e.uid) || ""; if ([...fs.options].some(o => o.value === rid)) fs.value = rid; }
   $("#f-date").value = e.date; $("#f-hours").value = e.hours; $("#f-next").value = e.next || "";
-  $("#f-project").value = e.project || ""; $("#f-unit").value = e.unit || ""; $("#f-note").value = e.note || "";
+  { const sel = $("#f-project"); if (e.project && ![...sel.options].some(o => o.value === e.project)) sel.add(new Option(e.project, e.project)); sel.value = e.project || ""; } $("#f-unit").value = e.unit || ""; $("#f-note").value = e.note || "";
   S.formStages = stagesOf(e).filter(x => x !== "Other"); renderParsed();
   const ss = document.getElementById("ss-"+e.status); if (ss) ss.checked = true;
   updateFormTitle();
@@ -1056,7 +1062,7 @@ async function saveEntry(ev){
   }
   if (needName && !name){ err.textContent = "Add your name so the team knows who logged this."; $("#f-name").focus(); return; }
   if (!date){ err.textContent = "Pick the date this work was done."; return; }
-  if (!lines.length || !lines[0].project){ err.textContent = "Choose or type the project."; $("#f-project").focus(); return; }
+  if (!lines.length || !lines[0].project){ err.textContent = "Choose the project."; $("#f-project").focus(); return; }
   if (!lines[0].stages.length){ err.textContent = "Pick at least one work stage."; return; }
   if (lines[0].line.length < 3){ err.textContent = "Describe what you worked on."; $("#f-note").focus(); return; }
   if (!(hours > 0 && hours <= 16)){ err.textContent = "Total hours should be between 0.5 and 16."; return; }
