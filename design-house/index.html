@@ -5,24 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ankura Design House</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 body{margin:0}img{max-width:100%}[hidden]{display:none!important}
-/* Layout: project tiles on the home page; each project opens to one sheet with three tabs: Timeline, Drawings, Team */
+/* Layout: iOS glass — frosted panels over a cool gradient field; project rows on home, tabbed sheet per project */
 :root{
-  --bg:#f3f2ec; --paper:#fbfaf6; --ink:#1d2219; --muted:#636a5a; --line:#dcdbd0; --track:#e8e7de;
-  --accent:#3f6b2e; --accent-soft:#e3ebd9; --warn:#b4541c; --warn-soft:#f7e3d6; --due:#b9c2ad; --info:#2f5d7a;
-  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
-  --f-body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
-  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --bg:#e9f0fa; --blob1:#9cc9ff; --blob2:#a9f0f0; --blob3:#c7c4ff;
+  --paper:rgba(255,255,255,.56); --paper-hi:rgba(255,255,255,.82); --edge:rgba(255,255,255,.75); --shadow:0 8px 30px rgba(30,60,110,.10);
+  --ink:#0c1a2e; --muted:#566781; --line:rgba(20,50,100,.09); --track:rgba(90,120,170,.16);
+  --accent:#0fa5a0; --accent-soft:rgba(15,165,160,.14); --warn:#ef5b2b; --warn-soft:rgba(239,91,43,.14); --due:#a9b8cf; --info:#5b5bf0;
+  --f-display:-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --f-body:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --f-mono:var(--f-body);
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#151812; --paper:#1d211a; --ink:#e7e9df; --muted:#9ba393; --line:#33382d; --track:#272c22;
-  --accent:#9cc47f; --accent-soft:#26331f; --warn:#ec9a62; --warn-soft:#3b2519; --due:#4d5644; --info:#8fbcd8; color-scheme:dark}}
+  --bg:#060b18; --blob1:#1d3f8f; --blob2:#0d5a63; --blob3:#3b2a85;
+  --paper:rgba(28,40,66,.48); --paper-hi:rgba(60,78,115,.55); --edge:rgba(255,255,255,.10); --shadow:0 10px 34px rgba(0,0,0,.35);
+  --ink:#eaf2ff; --muted:#93a4c2; --line:rgba(255,255,255,.08); --track:rgba(255,255,255,.09);
+  --accent:#3ddbd0; --accent-soft:rgba(61,219,208,.15); --warn:#ff8a5c; --warn-soft:rgba(255,138,92,.16); --due:#3c4c6a; --info:#8f8cff; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#151812; --paper:#1d211a; --ink:#e7e9df; --muted:#9ba393; --line:#33382d; --track:#272c22;
-  --accent:#9cc47f; --accent-soft:#26331f; --warn:#ec9a62; --warn-soft:#3b2519; --due:#4d5644; --info:#8fbcd8; color-scheme:dark}
+  --bg:#060b18; --blob1:#1d3f8f; --blob2:#0d5a63; --blob3:#3b2a85;
+  --paper:rgba(28,40,66,.48); --paper-hi:rgba(60,78,115,.55); --edge:rgba(255,255,255,.10); --shadow:0 10px 34px rgba(0,0,0,.35);
+  --ink:#eaf2ff; --muted:#93a4c2; --line:rgba(255,255,255,.08); --track:rgba(255,255,255,.09);
+  --accent:#3ddbd0; --accent-soft:rgba(61,219,208,.15); --warn:#ff8a5c; --warn-soft:rgba(255,138,92,.16); --due:#3c4c6a; --info:#8f8cff; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
 .wrap{max-width:1040px;margin:0 auto;padding-block:32px 72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:28px}
@@ -121,6 +125,43 @@ input[type=search]{font-size:14px;padding:8px 12px;border:1px solid var(--line);
 .trow .w{font-size:12.5px;color:var(--warn);text-align:right}
 @media (max-width:520px){.row{grid-template-columns:12px minmax(0,1fr)}.row .d{grid-column:2;text-align:left}}
 @media (prefers-reduced-motion:reduce){.tile,.tile .go{transition:none}}
+
+/* ===== iOS glass layer ===== */
+body{background:
+  radial-gradient(40vmax 40vmax at 8% 4%, var(--blob1), transparent 70%),
+  radial-gradient(38vmax 38vmax at 96% 18%, var(--blob2), transparent 70%),
+  radial-gradient(45vmax 45vmax at 60% 100%, var(--blob3), transparent 70%),
+  var(--bg);background-attachment:fixed;min-height:100%;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+h1,.ph h2,.tile .nm h2,.big b,.dash .pr .lab b{letter-spacing:-.022em;font-weight:700}
+.eyebrow{letter-spacing:.04em;font-weight:600}
+.tile,.list,.empty,.seg,.chip,input[type=search],.mon[aria-pressed="true"]{
+  background:var(--paper);border:1px solid var(--edge);
+  -webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:var(--shadow)}
+.tile{border-radius:22px;padding:20px 22px}
+.tile:hover{border-color:var(--edge);background:var(--paper-hi);transform:translateY(-1px)}
+.list{border-radius:18px;overflow:hidden}
+.empty{border-radius:18px;border-style:solid}
+.gh{background:var(--track);border-bottom:1px solid var(--line);letter-spacing:.04em}
+.row,.trow{border-bottom:1px solid var(--line)}
+.seg{border-radius:14px;padding:4px}
+.seg button,.seg.main a{border-radius:10px}
+.seg button[aria-selected="true"],.seg.main a[aria-current="page"]{background:var(--paper-hi);box-shadow:0 2px 10px rgba(20,40,80,.12)}
+.chip{border-radius:999px;box-shadow:none}
+.chip[aria-pressed="true"]{background:var(--info);border-color:transparent;color:#fff}
+input[type=search]{border-radius:12px;box-shadow:none}
+.bar{border-radius:999px;height:10px}
+.mon{border-radius:14px}
+.mon .col{border-radius:8px;background:var(--track)}
+.mon[aria-pressed="true"]{border-color:var(--edge)}
+.kv{border-left-color:var(--line)}
+.dot{box-shadow:0 0 0 3px var(--track)}
+.tag{border-radius:6px;border-color:var(--line);background:var(--track)}
+.more{color:var(--info)}
+.back{color:var(--info);font-weight:500}
+.tile .go{color:var(--info)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .tile,.list,.empty,.seg,.chip,input[type=search]{background:var(--paper-hi)}}
+@media (prefers-reduced-motion:reduce){.tile{transition:none}}
 </style>
 </head>
 <body>
