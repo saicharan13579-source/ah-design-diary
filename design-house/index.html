@@ -176,17 +176,11 @@ const PROJECTS = [
   { id:"the-woods", name:"The Woods", location:"Keesaragutta, Bommalaramaram",
     drawings: [...WOODS.drawings,
       // 3D renders by iBrain, from their message of Sat 24 Oct 2026
-      {d:"3D Renders · iBrain",g:null,t:"Plot 30 villa (1625 sq.ft East) 3D model",n:"SKP",dt:"2026-10-24",s:"Received (SketchUp model)"},
-      {d:"3D Renders · iBrain",g:null,t:"West facing villa 3D model",n:"",dt:"2026-11-02",s:"Expected (5 to 6 working days)"},
-      {d:"3D Renders · iBrain",g:null,t:"Plot 30 villa draft render view",n:"",dt:"2026-11-07",s:"Expected (requested before Diwali closure)"},
-      {d:"3D Renders · iBrain",g:null,t:"Entire site 3D with all details",n:"",dt:"2026-11-21",s:"Expected (about 3 weeks, after Diwali break)"}],
-    team: WOODS.appointments,
-    milestones:[
-      {dt:"2026-10-24", t:"Plot 30 East villa 3D model received", by:"iBrain", done:true},
-      {dt:"2026-11-02", t:"West facing villa 3D model", by:"iBrain", note:"5 to 6 working days from 24 Oct"},
-      {dt:"2026-11-07", t:"Plot 30 villa draft render view", by:"iBrain", note:"Requested before the office closes"},
-      {dt:"2026-11-08", end:"2026-11-15", t:"iBrain office closed for Diwali", by:"iBrain", closed:true},
-      {dt:"2026-11-21", t:"Entire site 3D with all details", by:"iBrain", note:"About 3 weeks of work, plus the Diwali week"}] }
+      {d:"Architecture",g:"3D Models · iBrain",t:"Plot 30 villa (1625 sq.ft East) 3D model",n:"SKP",dt:"2026-10-24",s:"Received (SketchUp model)"},
+      {d:"Architecture",g:"3D Models · iBrain",t:"West facing villa 3D model",n:"",dt:"2026-11-02",s:"Expected (5 to 6 working days)"},
+      {d:"Architecture",g:"3D Models · iBrain",t:"Plot 30 villa draft render view",n:"",dt:"2026-11-07",s:"Expected (requested before Diwali closure)"},
+      {d:"Architecture",g:"3D Models · iBrain",t:"Entire site 3D with all details",n:"",dt:"2026-11-21",s:"Expected (about 3 weeks, after Diwali break)"}],
+    team: [...WOODS.appointments, {r:"3D Visualisation Consultant (iBrain)", when:"", s:"On Board"}] }
 ];
 /* ================= END DATA ================= */
 
