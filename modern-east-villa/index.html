@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Modern East Villa Landscape</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: compact hero → sticky tabs → builder (element list | sticky summary rail) */
+:root{
+ --bg:#e6eef8;--surface:rgba(255,255,255,.52);--sunk:rgba(110,140,190,.13);--pill:rgba(255,255,255,.9);--ink:#0f1f38;--muted:#4f6180;--line:rgba(70,100,150,.16);
+ --glass-border:rgba(255,255,255,.7);--glass-shadow:0 8px 32px rgba(30,60,120,.12),inset 0 1px 0 rgba(255,255,255,.75);
+ --accent:#2a64d6;--accent-ink:#ffffff;--soft:rgba(42,100,214,.12);
+ --c-soft:#17a39a;--c-hard:#5d74d6;--c-serv:#1ea2d6;--c-feat:#9561de;
+ --good:#0f8a6c;--bad:#d0466b;--hero-ink:#f2f7ff;
+ --hero-bg:linear-gradient(135deg,rgba(28,56,128,.82),rgba(20,120,160,.62));
+ --blob1:#7fb7ff;--blob2:#7ee0d6;--blob3:#b49bff;
+ --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+ --f-body:"Instrument Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+ --r:18px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+ --bg:#060c1a;--surface:rgba(26,40,72,.45);--sunk:rgba(130,160,220,.10);--pill:rgba(80,110,170,.55);--ink:#e6eefc;--muted:#9aabc7;--line:rgba(150,180,235,.14);
+ --glass-border:rgba(160,195,255,.18);--glass-shadow:0 10px 36px rgba(0,0,0,.35),inset 0 1px 0 rgba(200,220,255,.08);
+ --accent:#7cc4ff;--accent-ink:#071224;--soft:rgba(124,196,255,.14);
+ --c-soft:#4fd1c5;--c-hard:#98a6ff;--c-serv:#5cc8f0;--c-feat:#c49bff;
+ --good:#4fd1a5;--bad:#ff8aa6;--hero-ink:#eef4ff;
+ --hero-bg:linear-gradient(135deg,rgba(40,70,150,.55),rgba(20,110,150,.35));
+ --blob1:#1d4fae;--blob2:#0d7a85;--blob3:#5a32a8;color-scheme:dark}}
+:root[data-theme="dark"]{
+ --bg:#060c1a;--surface:rgba(26,40,72,.45);--sunk:rgba(130,160,220,.10);--pill:rgba(80,110,170,.55);--ink:#e6eefc;--muted:#9aabc7;--line:rgba(150,180,235,.14);
+ --glass-border:rgba(160,195,255,.18);--glass-shadow:0 10px 36px rgba(0,0,0,.35),inset 0 1px 0 rgba(200,220,255,.08);
+ --accent:#7cc4ff;--accent-ink:#071224;--soft:rgba(124,196,255,.14);
+ --c-soft:#4fd1c5;--c-hard:#98a6ff;--c-serv:#5cc8f0;--c-feat:#c49bff;
+ --good:#4fd1a5;--bad:#ff8aa6;--hero-ink:#eef4ff;
+ --hero-bg:linear-gradient(135deg,rgba(40,70,150,.55),rgba(20,110,150,.35));
+ --blob1:#1d4fae;--blob2:#0d7a85;--blob3:#5a32a8;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);min-height:100vh}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.inner{max-width:1240px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--f-mono);font-size:11px;letter-spacing:.04em}
+.muted{color:var(--muted)}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.02em}
+
+/* Hero */
+.hero{background:var(--hero);color:var(--hero-ink);position:relative;overflow:hidden}
+.hero .inner{padding-block:40px 34px;position:relative}
+.hero svg.contours{position:absolute;right:-40px;top:-30px;width:520px;max-width:70%;opacity:.22;pointer-events:none}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.75}
+.hero h1{font-size:clamp(32px,5.2vw,56px);line-height:1.02;font-weight:800;margin:12px 0 12px;max-width:16ch}
+.hero p{max-width:60ch;margin:0;opacity:.85}
+.hero-facts{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:22px}
+.hero-facts div{display:flex;flex-direction:column}
+.hero-facts b{font-family:var(--f-display);font-size:20px;font-weight:700}
+.hero-facts span{font-size:12px;opacity:.7}
+
+/* Tabs */
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.tabs .inner{display:flex;gap:4px;overflow-x:auto;padding-block:8px;scrollbar-width:none}
+.tab{border:0;background:none;padding:9px 14px;border-radius:999px;font-weight:600;font-size:13px;white-space:nowrap;color:var(--muted)}
+.tab:hover{background:var(--sunk);color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tab .count{font-family:var(--f-mono);font-size:10px;margin-left:6px;opacity:.8}
+
+main.inner{padding-block:26px 90px}
+.view[hidden]{display:none}
+.vhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:12px;margin-bottom:18px}
+.vhead h2{font-size:clamp(22px,2.8vw,30px);font-weight:700}
+.vhead p{margin:4px 0 0;color:var(--muted);max-width:62ch;font-size:14px}
+
+/* Presets */
+.presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.preset{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;gap:2px;transition:border-color .15s,transform .15s}
+.preset:hover{border-color:var(--accent);transform:translateY(-1px)}
+.preset[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--soft)}
+.preset .pn{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.preset .pn b{font-family:var(--f-display);font-size:15px;letter-spacing:.02em}
+.preset .pv{font-family:var(--f-display);font-size:22px;font-weight:700}
+.preset small{color:var(--muted);font-size:12px}
+.chip{font-family:var(--f-mono);font-size:10px;letter-spacing:.06em;padding:3px 7px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.chip.on{background:var(--accent);color:var(--accent-ink)}
+
+/* Builder layout */
+.builder{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:22px;align-items:start}
+.groups{display:grid;gap:10px;min-width:0}
+.gcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;transition:opacity .2s,border-color .2s}
+.gcard.off{opacity:.62}
+.gcard.off:hover{opacity:.85}
+.ghead{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 16px}
+.gname{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.gname h3{font-size:16px;font-weight:700}
+.gnote{color:var(--muted);font-size:13px;margin-top:2px}
+.gsub{text-align:right}
+.gsub b{font-family:var(--f-display);font-size:18px;display:block}
+.gsub button{border:0;background:none;color:var(--accent);font-size:12px;font-weight:600;padding:2px 0}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+
+.sw{width:42px;height:24px;border-radius:999px;border:0;background:var(--line);position:relative;flex:none;transition:background .18s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--surface);box-shadow:0 1px 3px #0003;transition:transform .18s}
+.sw[aria-checked="true"]{background:var(--accent)}
+.sw[aria-checked="true"]::after{transform:translateX(18px)}
+.sw[aria-checked="mixed"]{background:color-mix(in srgb,var(--accent) 55%,var(--line))}
+.sw[aria-checked="mixed"]::after{transform:translateX(9px)}
+
+.items{border-top:1px solid var(--line);background:var(--sunk);padding:6px 16px 12px}
+.items[hidden]{display:none}
+.irow{display:grid;grid-template-columns:auto minmax(0,1fr) 128px 90px 100px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.irow:last-child{border-bottom:0}
+.irow.off .iname,.irow.off .iamt{opacity:.45;text-decoration:line-through}
+.irow input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent)}
+.qty{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden}
+.qty input{width:100%;min-width:0;border:0;background:none;padding:6px 8px;text-align:right;font-variant-numeric:tabular-nums}
+.qty span{padding:0 8px;font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.qty.edited{border-color:var(--c-feat)}
+.irate,.iamt{text-align:right;font-variant-numeric:tabular-nums}
+.irate{color:var(--muted);font-size:12px}
+.iamt{font-weight:600}
+.ihead{font-family:var(--f-mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--line)}
+
+/* Summary rail */
+.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 66px);display:grid;gap:12px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.panel h4{margin:0 0 10px;font-family:var(--f-mono);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.grand{font-family:var(--f-display);font-size:clamp(32px,3.6vw,42px);font-weight:800;line-height:1;letter-spacing:-.03em}
+.pkgname{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.pkgname b{font-family:var(--f-display);font-size:15px}
+.lines{display:grid;gap:4px;margin-top:14px;font-size:13px}
+.lines div{display:flex;justify-content:space-between;gap:10px}
+.lines .tot{border-top:1px solid var(--line);padding-top:6px;margin-top:4px;font-weight:700}
+.alt{margin-top:12px;font-size:12.5px;padding:10px 12px;border-radius:10px;background:var(--sunk)}
+.alt b{font-variant-numeric:tabular-nums}
+
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--sunk);border-radius:10px;padding:3px;gap:3px}
+.seg button{border:0;background:none;padding:8px 6px;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px #0002}
+.ctrl{display:grid;gap:6px;margin-top:14px;font-size:13px}
+.ctrl .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.gst{display:flex;align-items:center;gap:8px}
+.gst input[type=number]{width:62px;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:5px 7px;text-align:right}
+
+.stack{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--sunk);gap:2px}
+.stack i{display:block;height:100%;transition:flex-grow .35s}
+.legend{display:grid;gap:5px;margin-top:10px;font-size:12.5px}
+.legend div{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center}
+.legend .pct{color:var(--muted);width:38px;text-align:right}
+
+.ladder{display:grid;gap:8px;position:relative}
+.lrow{display:grid;grid-template-columns:62px 1fr 74px;gap:8px;align-items:center;font-size:12px;border:0;background:none;padding:0;text-align:left}
+.lrow .track{height:10px;background:var(--sunk);border-radius:5px;position:relative;overflow:visible}
+.lrow .track i{position:absolute;inset:0 auto 0 0;border-radius:5px;background:color-mix(in srgb,var(--accent) 45%,var(--sunk));transition:width .35s}
+.lrow.cur .track i{background:var(--accent)}
+.lrow b{font-family:var(--f-mono);font-weight:500;font-size:11px}
+.lrow .v{text-align:right;font-variant-numeric:tabular-nums}
+.marker{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--c-feat);border-radius:2px;transition:left .35s}
+
+.btnrow{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--line);background:var(--surface);padding:9px 13px;border-radius:10px;font-size:13px;font-weight:600}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+/* Compare */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.kpi span{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.kpi b{display:block;font-family:var(--f-display);font-size:24px;font-weight:700;margin-top:4px}
+.kpi small{color:var(--muted);font-size:12px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.toolbar input[type=search],.toolbar select{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px;font-size:13px}
+.toolbar input[type=search]{flex:1 1 220px;min-width:0}
+.toolbar .seg{display:inline-grid;min-width:240px}
+.tablebox{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+table{border-collapse:collapse;width:100%;min-width:900px;font-size:13px}
+th{text-align:left;font-family:var(--f-mono);font-weight:500;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:12px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th button{border:0;background:none;padding:0;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit}
+th button:hover{color:var(--ink)}
+th button[data-dir]::after{content:attr(data-dir);margin-left:4px;color:var(--accent)}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr:hover td{background:var(--sunk)}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td .sub{color:var(--muted);font-size:11.5px}
+tfoot td{font-weight:700;background:var(--sunk);border-bottom:0}
+.div{position:relative;height:10px;width:120px;background:var(--sunk);border-radius:5px}
+.div::before{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--muted)}
+.div i{position:absolute;top:0;bottom:0;border-radius:5px}
+.bad{color:var(--bad)}.good{color:var(--good)}
+.note{margin-top:14px;font-size:13px;color:var(--muted);max-width:80ch}
+
+/* Scope */
+.scopegrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.scard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;min-width:0}
+.scard header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.scard h3{font-size:15px}
+.sitem{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px dashed var(--line);font-size:13px}
+.sitem b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.units{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:16px}
+.units div{padding:12px 14px;border-radius:var(--r);background:var(--sunk);font-size:13px}
+.units b{font-family:var(--f-mono);font-weight:500;display:block;margin-bottom:2px}
+
+/* Approval */
+.progress{height:8px;background:var(--sunk);border-radius:4px;overflow:hidden;margin-top:10px}
+.progress i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.check{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;gap:8px;transition:border-color .2s}
+.check.done{border-color:var(--good)}
+.check label{display:flex;gap:10px;align-items:flex-start;font-weight:700;cursor:pointer}
+.check input[type=checkbox]{width:18px;height:18px;margin-top:2px;accent-color:var(--good);flex:none}
+.check p{margin:0;color:var(--muted);font-size:13px}
+.check textarea{border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:8px 10px;font:13px var(--f-body);resize:vertical;min-height:38px;color:var(--ink)}
+.callout{margin-top:14px;border-left:3px solid var(--c-feat);background:var(--surface);padding:12px 16px;border-radius:0 10px 10px 0;font-size:13.5px}
+
+footer{border-top:1px solid var(--line);margin-top:34px;padding-top:14px;color:var(--muted);font-size:12px}
+
+/* Mobile total bar */
+.mbar{display:none}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:50}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+textarea.fallback{width:100%;min-height:140px;margin-top:10px;font:12px var(--f-mono);border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);padding:10px}
+
+@media (max-width:960px){
+ .builder{grid-template-columns:minmax(0,1fr)}
+ .rail{position:static}
+ .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .scopegrid,.checks{grid-template-columns:minmax(0,1fr)}
+ .mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:25;justify-content:space-between;align-items:center;gap:12px;background:var(--surface);border-top:1px solid var(--line);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));box-shadow:0 -6px 18px #0000001a}
+ .mbar b{font-family:var(--f-display);font-size:20px}
+ .mbar[hidden]{display:none}
+}
+@media (max-width:640px){
+ .presets{grid-template-columns:minmax(0,1fr)}
+ .preset{grid-template-columns:1fr auto;align-items:center}
+ .preset small{grid-column:1/-1}
+ .irow{grid-template-columns:auto minmax(0,1fr) 100px;row-gap:4px}
+ .irow .irate{grid-column:2}
+ .irow .iamt{grid-column:3}
+ .ihead{display:none}
+ .units{grid-template-columns:minmax(0,1fr)}
+ .ghead{gap:10px;padding:12px}
+ .gsub b{font-size:16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ---------- Cool glass theme ---------- */
+.aurora{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.aurora i{position:absolute;border-radius:50%;filter:blur(80px);opacity:.75}
+.aurora i:nth-child(1){width:52vw;height:52vw;left:-12vw;top:-14vw;background:var(--blob1);animation:drift 26s ease-in-out infinite alternate}
+.aurora i:nth-child(2){width:44vw;height:44vw;right:-10vw;top:22vh;background:var(--blob2);animation:drift 32s ease-in-out infinite alternate-reverse}
+.aurora i:nth-child(3){width:40vw;height:40vw;left:24vw;bottom:-18vw;background:var(--blob3);animation:drift 38s ease-in-out infinite alternate}
+@keyframes drift{to{transform:translate(6vw,4vh) scale(1.08)}}
+.preset,.gcard,.panel,.kpi,.tablebox,.scard,.check,.callout,.units div,.mbar,.tabs{
+ background:var(--surface);-webkit-backdrop-filter:blur(20px) saturate(170%);backdrop-filter:blur(20px) saturate(170%);
+ border:1px solid var(--glass-border);box-shadow:var(--glass-shadow)}
+.tabs{border-width:0 0 1px;box-shadow:0 4px 24px rgba(20,40,90,.08)}
+.callout{border-left:3px solid var(--c-feat);border-radius:0 14px 14px 0}
+.hero{background:var(--hero-bg);color:var(--hero-ink);-webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);border-bottom:1px solid rgba(255,255,255,.18)}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.14) 0%,transparent 40%);pointer-events:none}
+.hero h1{background:linear-gradient(90deg,#fff,#bfe6ff 60%,#d9c9ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.preset:hover,.gcard:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--glass-border))}
+.preset[aria-pressed="true"]{background:linear-gradient(140deg,var(--soft),var(--surface));box-shadow:inset 0 0 0 1px var(--accent),var(--glass-shadow)}
+.tab[aria-selected="true"]{background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 55%,var(--c-soft)));box-shadow:0 4px 14px color-mix(in srgb,var(--accent) 35%,transparent)}
+.btn{background:var(--surface);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-color:var(--glass-border)}
+.btn.primary{background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 60%,var(--c-soft)))}
+.seg button[aria-pressed="true"]{background:var(--pill)}
+.sw::after{background:#fff}
+.sw[aria-checked="true"]{background:linear-gradient(90deg,var(--c-serv),var(--accent))}
+.grand{background:linear-gradient(90deg,var(--accent),var(--c-feat));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lrow.cur .track i{background:linear-gradient(90deg,var(--c-serv),var(--accent))}
+.check textarea,.qty,.gst input[type=number],.toolbar input[type=search],.toolbar select{background:var(--pill);border-color:var(--line)}
+.items{background:var(--sunk)}
+.alt{background:var(--soft)}
+.chip.on{background:linear-gradient(135deg,var(--accent),var(--c-soft))}
+.mbar b{background:linear-gradient(90deg,var(--accent),var(--c-feat));-webkit-background-clip:text;background-clip:text;color:transparent}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+ :root{--surface:rgba(255,255,255,.92)}
+}
+@media (prefers-reduced-motion:reduce){.aurora i{animation:none}}
+
+/* About */
+.about-intro{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:28px;align-items:center;padding:28px}
+.about-intro h2{font-size:clamp(26px,3.4vw,38px);font-weight:800;margin:12px 0 10px}
+.about-intro p{margin:0;color:var(--muted);max-width:58ch}
+.about-figs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.about-figs div{background:var(--sunk);border-radius:14px;padding:14px;display:grid;gap:2px}
+.about-figs span{font-size:12px;color:var(--muted)}
+.about-figs b{font-family:var(--f-display);font-size:26px;font-weight:700}
+.about-figs small{font-family:var(--f-mono);font-size:11px;color:var(--muted);font-weight:500}
+.about-h{font-size:20px;margin:30px 0 12px}
+.about-packs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.apack{background:var(--surface);-webkit-backdrop-filter:blur(20px) saturate(170%);backdrop-filter:blur(20px) saturate(170%);border:1px solid var(--glass-border);box-shadow:var(--glass-shadow);border-radius:var(--r);padding:18px;display:grid;gap:10px;align-content:start}
+.apack header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.apack header b{font-family:var(--f-display);font-size:16px}
+.apack .price{font-family:var(--f-display);font-size:28px;font-weight:800}
+.apack p{margin:0;font-size:13px;color:var(--muted)}
+.apack .tags{display:flex;flex-wrap:wrap;gap:6px}
+.apack .tags span{font-size:12px;padding:4px 9px;border-radius:999px;background:var(--sunk);display:inline-flex;align-items:center;gap:6px}
+.apack .tags span.new{background:var(--soft);font-weight:600}
+.apack .plus{font-family:var(--f-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.about-steps{list-style:none;counter-reset:s;padding:0;margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.about-steps li{counter-increment:s;background:var(--surface);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid var(--glass-border);box-shadow:var(--glass-shadow);border-radius:var(--r);padding:16px;display:grid;gap:4px;font-size:13px}
+.about-steps li::before{content:counter(s);width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-mono);font-size:12px;color:var(--accent-ink);background:linear-gradient(135deg,var(--accent),var(--c-soft));margin-bottom:6px}
+.about-steps b{font-size:14px}
+.about-steps span{color:var(--muted)}
+.about-steps a{color:var(--accent);font-weight:600}
+.about-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:30px}
+.about-list{list-style:none;margin:0;padding:0;display:grid;gap:7px;font-size:13.5px}
+.about-list li{display:flex;gap:9px}
+.about-list li::before{flex:none;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;margin-top:1px}
+.about-list .yes::before{content:"✓";background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.about-list .no::before{content:"–";background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
+.about-gloss{margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 14px;font-size:13.5px}
+.about-gloss dt{font-family:var(--f-mono);font-size:12px;color:var(--accent);padding-top:2px}
+.about-gloss dd{margin:0;color:var(--muted)}
+@media (max-width:960px){.about-intro,.about-cols{grid-template-columns:minmax(0,1fr)}.about-packs{grid-template-columns:minmax(0,1fr)}.about-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.about-steps{grid-template-columns:minmax(0,1fr)}.about-intro{padding:20px}}
+
+
+.about-decide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.decide{background:var(--surface);-webkit-backdrop-filter:blur(20px) saturate(170%);backdrop-filter:blur(20px) saturate(170%);border:1px solid var(--glass-border);box-shadow:var(--glass-shadow);border-radius:var(--r);padding:16px 18px;display:grid;gap:6px;align-content:start}
+.decide .q{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.decide h4{margin:0;font-family:var(--f-display);font-size:17px;font-weight:700;text-transform:none;letter-spacing:-.01em;color:var(--ink)}
+.decide p{margin:0;font-size:13.5px;color:var(--muted)}
+.decide b.big{font-family:var(--f-display);font-size:22px;color:var(--ink)}
+@media (max-width:960px){.about-decide{grid-template-columns:minmax(0,1fr)}}
+
+/* ---------- Solid (no glass) ---------- */
+:root{--bg:#eef3f9;--surface:#ffffff;--pill:#f4f7fb;--sunk:#e8eef6;--line:#d7e0ec;--soft:#e2ebfa;--glass-border:#d7e0ec;--glass-shadow:0 1px 2px rgba(20,40,80,.05),0 6px 18px rgba(20,40,80,.06);--hero-bg:linear-gradient(135deg,#1d3b82,#13779e)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0a1222;--surface:#121c30;--pill:#1a2740;--sunk:#18233a;--line:#25344f;--soft:#163050;--glass-border:#25344f;--glass-shadow:0 1px 2px rgba(0,0,0,.3);--hero-bg:linear-gradient(135deg,#17305f,#0e4d64);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0a1222;--surface:#121c30;--pill:#1a2740;--sunk:#18233a;--line:#25344f;--soft:#163050;--glass-border:#25344f;--glass-shadow:0 1px 2px rgba(0,0,0,.3);--hero-bg:linear-gradient(135deg,#17305f,#0e4d64);color-scheme:dark}
+*{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.aurora{display:none}
+.hero::after{display:none}
+.hero h1{background:none;color:var(--hero-ink)}
+.grand,.mbar b{background:none;color:var(--accent)}
+.tabs{background:var(--bg)}
+</style>
+</head>
+<body>
+
+
+<header class="hero">
+ <div class="inner">
+  <svg class="contours" viewBox="0 0 400 300" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1">
+   <path d="M60 150c0-60 60-110 140-110s150 40 150 110-70 120-150 120S60 210 60 150Z"/>
+   <path d="M95 150c0-45 45-82 105-82s115 30 115 82-52 90-115 90S95 195 95 150Z"/>
+   <path d="M130 150c0-30 30-55 72-55s78 20 78 55-36 62-78 62-72-27-72-62Z"/>
+   <path d="M165 150c0-16 16-28 38-28s42 10 42 28-19 33-42 33-38-15-38-33Z"/>
+   <path d="M20 150c0-80 80-145 180-145s195 55 195 145-90 150-195 150S20 230 20 150Z"/>
+  </svg>
+  <div class="eyebrow">Landscape BOQ · budget planner · updated 27 Oct 2026</div>
+  <h1>Modern East Villa landscape</h1>
+  <p>Start from a package, then switch individual elements on or off, adjust quantities and see the budget update as you go. GST and transport are excluded in the source BOQ; add them here if you need an all-in figure.</p>
+  <div class="hero-facts">
+   <div><b class="num">29</b><span>BOQ line items</span></div>
+   <div><b class="num">10</b><span>landscape elements</span></div>
+   <div><b class="num">3</b><span>scope packages</span></div>
+   <div><b class="num">2</b><span>rate columns compared</span></div>
+  </div>
+ </div>
+</header>
+
+<nav class="tabs" aria-label="Sections">
+ <div class="inner" role="tablist">
+  <button class="tab" role="tab" data-view="about">About</button>
+  <button class="tab" role="tab" data-view="build">Build the budget</button>
+  <button class="tab" role="tab" data-view="compare">Rate comparison</button>
+  <button class="tab" role="tab" data-view="scope">Quantities</button>
+  <button class="tab" role="tab" data-view="approve">Before approval<span class="count" id="tabCheck">0/6</span></button>
+ </div>
+</nav>
+
+<main class="inner">
+
+<!-- ABOUT -->
+<section class="view" id="v-about">
+ <div class="about-intro panel">
+  <div>
+   <span class="chip">Summary for management</span>
+   <h2>Landscape options for Modern East Villa</h2>
+   <p>This page sets out the landscape works for Modern East Villa as three scope options, all priced from the same bill of quantities. Each option builds on the one before it. It also compares what the work costs if done by the in-house Ankura Homes team versus the external landscape team.</p>
+   <div class="btnrow" style="margin-top:16px"><button class="btn primary" data-go="build">Explore the options</button><button class="btn" data-go="compare">See the rate comparison</button></div>
+  </div>
+  <div class="about-figs">
+   <div><span>Lawn</span><b class="num">4,300 <small>sft</small></b></div>
+   <div><span>Shrubs &amp; ground cover</span><b class="num">2,500 <small>sft</small></b></div>
+   <div><span>Trees &amp; plants</span><b class="num">35 <small>nos</small></b></div>
+   <div><span>Stone &amp; paving</span><b class="num">1,771 <small>sft</small></b></div>
+  </div>
+ </div>
+
+ <h3 class="about-h">Decisions needed</h3>
+ <div class="about-decide" id="aboutDecide"></div>
+
+ <h3 class="about-h">The three options</h3>
+ <div class="about-packs" id="aboutPacks"></div>
+
+ <h3 class="about-h">How to use this page</h3>
+ <ol class="about-steps">
+  <li><b>Pick a starting option</b><span>Choose DEFAULT, PACK-1 or PACK-2 in <a href="#build" data-go="build">Build the budget</a>.</span></li>
+  <li><b>Tailor it</b><span>Switch individual elements on or off, or adjust a quantity. The total updates instantly.</span></li>
+  <li><b>Check the rates</b><span><a href="#compare" data-go="compare">Rate comparison</a> shows the in-house and external landscape team prices line by line.</span></li>
+  <li><b>Close the open points</b><span><a href="#approve" data-go="approve">Before approval</a> lists what to confirm before a work order is issued.</span></li>
+ </ol>
+
+ <div class="about-cols">
+  <div class="panel">
+   <h4>What the prices include</h4>
+   <ul class="about-list">
+    <li class="yes">Supply and execution of every BOQ item at the quantities shown</li>
+    <li class="yes">Soil preparation: red earth, manure and compost mixes</li>
+    <li class="yes">Drip irrigation and landscape lighting as lump-sum allowances</li>
+    <li class="no">GST (can be added in the budget panel)</li>
+    <li class="no">Transportation</li>
+    <li class="no">Site variation of 10–15% (can be added in the budget panel)</li>
+   </ul>
+  </div>
+  <div class="panel">
+   <h4>Terms used</h4>
+   <dl class="about-gloss">
+    <dt>BOQ</dt><dd>Bill of quantities: each work item with its quantity and rate.</dd>
+    <dt>CFT · SFT · RFT</dt><dd>Cubic feet, square feet and running feet.</dd>
+    <dt>LS</dt><dd>Lump sum: a fixed allowance until detailed designs are priced.</dd>
+    <dt>PCC 1:4:8</dt><dd>Plain cement concrete used as a base under walls and decks.</dd>
+    <dt>Kerbing</dt><dd>Stone edging that forms the planter wall.</dd>
+   </dl>
+  </div>
+ </div>
+</section>
+
+<!-- BUILD -->
+<section class="view" id="v-build" hidden>
+ <div class="vhead">
+  <div><h2>Build the landscape budget</h2><p>Each package adds to the one before it. Pick one as a starting point, then fine-tune element by element.</p></div>
+  <div class="btnrow"><button class="btn" id="resetQty">Reset quantities</button><button class="btn" id="copySummary">Copy summary</button></div>
+ </div>
+ <div class="presets" id="presets"></div>
+ <div class="builder">
+  <div class="groups" id="groups"></div>
+  <aside class="rail" id="rail">
+   <div class="panel">
+    <div class="pkgname"><b id="pkgName">DEFAULT</b><span class="chip" id="pkgCount">0 of 10 elements</span></div>
+    <div class="grand num" id="grand">₹0</div>
+    <div class="lines">
+     <div><span>Works (BOQ)</span><span class="num" id="lBase"></span></div>
+     <div><span id="lContLabel">Contingency 0%</span><span class="num" id="lCont"></span></div>
+     <div id="lGstRow"><span id="lGstLabel">GST</span><span class="num" id="lGst"></span></div>
+     <div class="tot"><span>Estimated total</span><span class="num" id="lTot"></span></div>
+    </div>
+    <div class="alt" id="alt"></div>
+   </div>
+   <div class="panel">
+    <h4>Rate basis</h4>
+    <div class="seg" id="basisSeg">
+     <button data-basis="ankura" aria-pressed="true">In-house Ankura Homes</button>
+     <button data-basis="ext" aria-pressed="false">External landscape team</button>
+    </div>
+    <div class="ctrl">
+     <div class="row"><label for="cont">Site variation allowance</label><b class="num" id="contOut">0%</b></div>
+     <input type="range" id="cont" min="0" max="15" step="1" value="0">
+     <span class="muted" style="font-size:12px">The BOQ notes 10–15% variation is possible during execution.</span>
+    </div>
+    <div class="ctrl">
+     <div class="row">
+      <label for="gstOn" class="gst"><input type="checkbox" id="gstOn" style="accent-color:var(--accent);width:16px;height:16px"> Add GST</label>
+      <span class="gst"><input type="number" id="gstRate" min="0" max="28" step="1" value="18" aria-label="GST rate"> %</span>
+     </div>
+    </div>
+   </div>
+   <div class="panel">
+    <h4>Where the money goes</h4>
+    <div class="stack" id="stack"></div>
+    <div class="legend" id="legend"></div>
+   </div>
+   <div class="panel">
+    <h4>Packages at these settings</h4>
+    <div class="ladder" id="ladder"></div>
+    <p class="muted" style="font-size:12px;margin:10px 0 0">The violet line marks your current selection. Tap a package to load it.</p>
+   </div>
+  </aside>
+ </div>
+</section>
+
+<!-- COMPARE -->
+<section class="view" id="v-compare" hidden>
+ <div class="vhead"><div><h2>External team vs in-house rates</h2><p>Same quantities, two rate columns. A positive difference means the external landscape team is costlier for that line.</p></div></div>
+ <div class="kpis" id="kpis"></div>
+ <div class="toolbar">
+  <div class="seg" id="cmpScope"><button data-scope="all" aria-pressed="true">Full BOQ</button><button data-scope="sel" aria-pressed="false">My selection</button></div>
+  <select id="cmpCat" aria-label="Category"><option value="all">All categories</option></select>
+  <input type="search" id="cmpSearch" placeholder="Search item or element">
+  <button class="btn" id="copyCsv">Copy as CSV</button>
+ </div>
+ <div class="tablebox"><table id="cmpTable"></table></div>
+ <div id="csvFallback"></div>
+ <p class="note">Difference = external amount − in-house amount. A lower rate is not automatically better value: check specifications, brands and workmanship before awarding. Note that PCC is the one item where the in-house rate is higher.</p>
+</section>
+
+<!-- SCOPE -->
+<section class="view" id="v-scope" hidden>
+ <div class="vhead"><div><h2>What gets built, and how much</h2><p>Every BOQ line with its quantity. Items in your current selection are marked.</p></div></div>
+ <div class="toolbar"><input type="search" id="scopeSearch" placeholder="Search all work items"><span class="muted" id="scopeCount" style="font-size:13px"></span></div>
+ <div class="scopegrid" id="scopeGrid"></div>
+ <div class="units">
+  <div><b>CFT · cubic feet</b>Soil, excavation, sand and concrete volumes.</div>
+  <div><b>SFT · square feet</b>Lawn, paving, stone and ground-cover areas.</div>
+  <div><b>RFT · Nos · LS</b>Running feet, piece counts and lump-sum allowances.</div>
+ </div>
+</section>
+
+<!-- APPROVE -->
+<section class="view" id="v-approve" hidden>
+ <div class="vhead"><div><h2>Before issuing the work order</h2><p>Close these gaps first. Ticks and notes are saved in this browser.</p></div></div>
+ <div class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><b style="font-family:var(--f-display);font-size:20px" id="chkText">0 of 6 confirmed</b><span class="mono muted" id="chkPct">0%</span></div>
+  <div class="progress"><i id="chkBar" style="width:0%"></i></div>
+ </div>
+ <div class="checks" id="checks"></div>
+ <div class="callout"><b>Commercial notes from the source BOQ.</b> GST and transportation are excluded. A 10–15% variation is possible during site execution. Irrigation and lighting are lump-sum allowances until itemised schedules are received.</div>
+</section>
+
+<footer>Source: Modern East Villa Landscape BOQ Basic, updated 27-10-2026. Amounts are quantity × rate from the two source rate columns, rounded to whole rupees. Confirm all figures against the signed BOQ and approved drawings before procurement.</footer>
+</main>
+
+<div class="mbar" id="mbar"><div><div class="mono muted" id="mName">DEFAULT</div><b class="num" id="mTotal">₹0</b></div><button class="btn primary" id="mJump">Summary</button></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const items=[{"group":"Planter wall","item":"Earthwork excavation","unit":"CFT","qty":891,"externalRate":13,"ankuraRate":8.4952143626},{"group":"Planter wall","item":"PCC 1:4:8 foundation / bed","unit":"CFT","qty":295,"externalRate":100,"ankuraRate":121.0568046667},{"group":"Planter wall","item":"50 mm stone kerbing, CM 1:4 + grout","unit":"RFT","qty":594,"externalRate":135,"ankuraRate":125},{"group":"Lawn-side stepping","item":"Earthwork excavation","unit":"CFT","qty":1008,"externalRate":13,"ankuraRate":8.4952143626},{"group":"Lawn-side stepping","item":"River sand bed, 50 mm","unit":"CFT","qty":224,"externalRate":120,"ankuraRate":95},{"group":"Lawn-side stepping","item":"40 mm natural stepping stone","unit":"SFT","qty":560,"externalRate":160,"ankuraRate":134},{"group":"Deck under pergola","item":"Earthwork excavation","unit":"CFT","qty":260,"externalRate":13,"ankuraRate":8.4952143626},{"group":"Deck under pergola","item":"PCC 1:4:8 base","unit":"CFT","qty":95,"externalRate":100,"ankuraRate":121.0568046667},{"group":"Deck under pergola","item":"600×200×100 mm block masonry","unit":"SFT","qty":40,"externalRate":95,"ankuraRate":75},{"group":"Deck under pergola","item":"16 mm wooden tile paving + grout","unit":"SFT","qty":286,"externalRate":220,"ankuraRate":175},{"group":"Stepping stones","item":"Earthwork excavation","unit":"CFT","qty":275,"externalRate":13,"ankuraRate":8.4952143626},{"group":"Stepping stones","item":"River sand bed, 50 mm","unit":"CFT","qty":16,"externalRate":120,"ankuraRate":95},{"group":"Stepping stones","item":"40 mm natural stepping stone","unit":"SFT","qty":305,"externalRate":160,"ankuraRate":134},{"group":"Parking","item":"Earthwork excavation","unit":"CFT","qty":310,"externalRate":13,"ankuraRate":8.4952143626},{"group":"Parking","item":"River sand bed, 50 mm","unit":"CFT","qty":125,"externalRate":120,"ankuraRate":95},{"group":"Parking","item":"65 mm paving blocks","unit":"SFT","qty":620,"externalRate":160,"ankuraRate":104},{"group":"Seating & elements","item":"Seating units (2 Nos.)","unit":"Nos","qty":2,"externalRate":25000,"ankuraRate":15000},{"group":"Seating & elements","item":"Sculpture (1 No.)","unit":"Nos","qty":1,"externalRate":25000,"ankuraRate":20000},{"group":"Seating & elements","item":"Natural pond with boulders (1 No.)","unit":"Nos","qty":1,"externalRate":250000,"ankuraRate":125000},{"group":"Lawn","item":"Red earth – 80% soil mix","unit":"CFT","qty":1720,"externalRate":85,"ankuraRate":40},{"group":"Lawn","item":"Vermicompost + neem cake + superphosphate + bonemeal – 20%","unit":"CFT","qty":431,"externalRate":60,"ankuraRate":30},{"group":"Lawn","item":"Korean carpet lawn: supply, levelling & fixing","unit":"SFT","qty":4300,"externalRate":22,"ankuraRate":20},{"group":"Planting","item":"Red earth – 70% soil mix","unit":"CFT","qty":3635,"externalRate":85,"ankuraRate":40},{"group":"Planting","item":"Manure – 20% soil mix","unit":"CFT","qty":1040,"externalRate":60,"ankuraRate":30},{"group":"Planting","item":"Vermicompost + neem cake + superphosphate + bonemeal + Thimit + Polydol – 10%","unit":"CFT","qty":520,"externalRate":50,"ankuraRate":30},{"group":"Planting","item":"Plants","unit":"Nos","qty":35,"externalRate":1200,"ankuraRate":800},{"group":"Planting","item":"Shrubs & ground covers","unit":"SFT","qty":2500,"externalRate":80,"ankuraRate":40},{"group":"Irrigation","item":"Drip irrigation – lump-sum allowance","unit":"LS","qty":1,"externalRate":170000,"ankuraRate":70000},{"group":"Lighting","item":"Landscape lighting – lump-sum allowance","unit":"LS","qty":1,"externalRate":250000,"ankuraRate":125000}];
+
+const CATS={soft:{name:'Softscape',color:'var(--c-soft)'},hard:{name:'Hardscape',color:'var(--c-hard)'},serv:{name:'Irrigation & lighting',color:'var(--c-serv)'},feat:{name:'Feature elements',color:'var(--c-feat)'}};
+const GROUPS=[
+ {key:'Lawn',tier:0,cat:'soft',note:'4,300 sft Korean carpet lawn on an 80/20 red earth and compost bed.'},
+ {key:'Planting',tier:0,cat:'soft',note:'35 plants plus 2,500 sft of shrubs and ground covers, with soil mix.'},
+ {key:'Lawn-side stepping',tier:0,cat:'hard',note:'560 sft of 40 mm natural stepping stone on a sand bed.'},
+ {key:'Parking',tier:0,cat:'hard',note:'620 sft of 65 mm paver blocks on a sand bed.'},
+ {key:'Irrigation',tier:0,cat:'serv',note:'Drip irrigation, lump-sum allowance.'},
+ {key:'Planter wall',tier:1,cat:'hard',note:'594 rft of 50 mm stone kerbing on a PCC bed.'},
+ {key:'Deck under pergola',tier:1,cat:'hard',note:'286 sft wooden-finish tile deck on block masonry.'},
+ {key:'Stepping stones',tier:1,cat:'hard',note:'305 sft of additional stepping stones.'},
+ {key:'Lighting',tier:1,cat:'serv',note:'Landscape lighting, lump-sum allowance.'},
+ {key:'Seating & elements',tier:2,cat:'feat',note:'2 seating units, a sculpture and a natural pond with boulders.'}
+];
+const PRESETS=[
+ {name:'DEFAULT',label:'Essential',desc:'Lawn, planting, access paving, parking and drip irrigation.'},
+ {name:'PACK-1',label:'Enhanced',desc:'Adds planter wall, pergola deck, more stepping stones and lighting.'},
+ {name:'PACK-2',label:'Complete',desc:'Adds seating, sculpture and the natural pond. Every BOQ element.'}
+];
+const BASIS={ankura:'In-house Ankura Homes',ext:'External landscape team'};
+const CHECKS=[
+ ['Plant schedule','Species, botanical names, height, pot size and locations for the 35 plants; define the 2,500 sft shrub and ground-cover mix.'],
+ ['Irrigation layout','Pipe sizes, main and lateral lines, zones, valves, filters, controller, water source and item-wise pricing.'],
+ ['Lighting schedule','Fixture types, count, wattage, make, IP rating, cable routes, transformer and layout.'],
+ ['Pond and features','Dimensions, waterproofing, pump, filtration, boulder sizes, electrical provision and maintenance access.'],
+ ['Hardscape specifications','Stone samples, thickness, tile finish, paver type, grout colour, deck build-up, seating and sculpture details.'],
+ ['Measurements and commercials','Verify quantities against approved drawings; confirm GST, transport, wastage, exclusions, timeline and final rates.']
+];
+
+const gIndex=Object.fromEntries(GROUPS.map((g,i)=>[g.key,i]));
+const tierOf=it=>GROUPS[gIndex[it.group]].tier;
+const inr=new Intl.NumberFormat('en-IN',{maximumFractionDigits:0});
+const inr2=new Intl.NumberFormat('en-IN',{maximumFractionDigits:2});
+const money=n=>(n<0?'−₹':'₹')+inr.format(Math.abs(Math.round(n)));
+const rateTxt=n=>'₹'+inr2.format(n);
+const lakh=n=>'₹'+(n/1e5).toFixed(2)+' L';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const KEY='mev-landscape-v2';
+function fresh(){return{inc:items.map(it=>tierOf(it)<=0),qty:items.map(it=>it.qty),basis:'ankura',cont:0,gst:false,gstRate:18,checks:CHECKS.map(()=>false),notes:CHECKS.map(()=>''),open:{}}}
+let S=fresh();
+try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.inc)&&s.inc.length===items.length)S=Object.assign(fresh(),s)}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+const rate=(it,b)=>b==='ext'?it.externalRate:it.ankuraRate;
+const amt=(i,b=S.basis)=>S.qty[i]*rate(items[i],b);
+const selBase=b=>items.reduce((s,_,i)=>s+(S.inc[i]?amt(i,b):0),0);
+const presetBase=(p,b)=>items.reduce((s,it,i)=>s+(tierOf(it)<=p?amt(i,b):0),0);
+const withExtras=base=>{const c=base*S.cont/100,g=S.gst?(base+c)*S.gstRate/100:0;return{base,c,g,tot:base+c+g}};
+function matchPreset(){for(let p=0;p<3;p++)if(items.every((it,i)=>S.inc[i]===(tierOf(it)<=p)))return p;return -1}
+const groupItems=gi=>items.map((it,i)=>i).filter(i=>gIndex[items[i].group]===gi);
+const qtyEdited=()=>items.some((it,i)=>S.qty[i]!==it.qty);
+
+/* ---------- Build view ---------- */
+function buildPresets(){
+ $('#presets').innerHTML=PRESETS.map((p,i)=>`<button class="preset" data-p="${i}" aria-pressed="false"><span class="pn"><b>${p.name}</b><span class="chip">${p.label}</span></span><span class="pv num" id="pv${i}"></span><small>${p.desc}</small></button>`).join('');
+ document.querySelectorAll('.preset').forEach(b=>b.onclick=()=>applyPreset(+b.dataset.p));
+}
+function applyPreset(p){S.inc=items.map(it=>tierOf(it)<=p);save();update();toast(PRESETS[p].name+' loaded')}
+
+function buildGroups(){
+ $('#groups').innerHTML=GROUPS.map((g,gi)=>{
+  const idx=groupItems(gi);
+  return `<article class="gcard" id="card${gi}">
+   <div class="ghead">
+    <button class="sw" role="switch" id="sw${gi}" aria-label="Include ${esc(g.key)}"></button>
+    <div><div class="gname"><span class="dot" style="background:${CATS[g.cat].color}"></span><h3>${esc(g.key)}</h3><span class="chip">${PRESETS[g.tier].name}</span></div><div class="gnote">${esc(g.note)}</div></div>
+    <div class="gsub"><b class="num" id="sub${gi}"></b><button aria-expanded="false" aria-controls="items${gi}" id="tog${gi}">${idx.length} items</button></div>
+   </div>
+   <div class="items" id="items${gi}" hidden>
+    <div class="irow ihead"><span></span><span>Item</span><span style="text-align:right">Quantity</span><span style="text-align:right">Rate</span><span style="text-align:right">Amount</span></div>
+    ${idx.map(i=>{const it=items[i];return `<div class="irow" id="row${i}">
+     <input type="checkbox" id="chk${i}" aria-label="Include ${esc(it.item)}">
+     <label class="iname" for="chk${i}">${esc(it.item)}</label>
+     <span class="qty" id="qbox${i}"><input type="number" id="qty${i}" min="0" step="any" value="${S.qty[i]}" aria-label="Quantity for ${esc(it.item)}"><span>${it.unit}</span></span>
+     <span class="irate" id="rate${i}"></span>
+     <span class="iamt" id="amt${i}"></span></div>`}).join('')}
+   </div></article>`}).join('');
+ GROUPS.forEach((g,gi)=>{
+  $('#sw'+gi).onclick=()=>{const idx=groupItems(gi),allOn=idx.every(i=>S.inc[i]);idx.forEach(i=>S.inc[i]=!allOn);save();update()};
+  const tog=$('#tog'+gi),box=$('#items'+gi);
+  const setOpen=o=>{box.hidden=!o;tog.setAttribute('aria-expanded',o);tog.textContent=(o?'Hide ':'')+groupItems(gi).length+' items';S.open[gi]=o};
+  setOpen(!!S.open[gi]);
+  tog.onclick=()=>{setOpen(box.hidden);save()};
+ });
+ items.forEach((it,i)=>{
+  $('#chk'+i).onchange=e=>{S.inc[i]=e.target.checked;save();update()};
+  $('#qty'+i).oninput=e=>{const v=parseFloat(e.target.value);S.qty[i]=isFinite(v)&&v>=0?v:0;save();update()};
+ });
+}
+
+let shown=0,anim=0;
+function tween(el,to){
+ cancelAnimationFrame(anim);
+ if(matchMedia('(prefers-reduced-motion: reduce)').matches){shown=to;el.textContent=money(to);return}
+ const from=shown,t0=performance.now(),d=420;
+ const step=t=>{const k=Math.min(1,(t-t0)/d),e=1-Math.pow(1-k,3);shown=from+(to-from)*e;el.textContent=money(shown);if(k<1)anim=requestAnimationFrame(step)};
+ anim=requestAnimationFrame(step);
+}
+
+function update(){
+ const b=S.basis,other=b==='ext'?'ankura':'ext';
+ // presets
+ const mp=matchPreset();
+ PRESETS.forEach((p,i)=>{$('#pv'+i).textContent=money(withExtras(presetBase(i,b)).tot);document.querySelector(`.preset[data-p="${i}"]`).setAttribute('aria-pressed',mp===i)});
+ // groups
+ let onCount=0;
+ GROUPS.forEach((g,gi)=>{
+  const idx=groupItems(gi),on=idx.filter(i=>S.inc[i]).length;
+  const st=on===0?'false':on===idx.length?'true':'mixed';
+  if(on>0)onCount++;
+  $('#sw'+gi).setAttribute('aria-checked',st);
+  $('#card'+gi).classList.toggle('off',on===0);
+  $('#sub'+gi).textContent=money(idx.reduce((s,i)=>s+(S.inc[i]?amt(i):0),0));
+  idx.forEach(i=>{
+   $('#chk'+i).checked=S.inc[i];
+   $('#row'+i).classList.toggle('off',!S.inc[i]);
+   $('#rate'+i).textContent=rateTxt(rate(items[i],b))+'/'+items[i].unit.toLowerCase();
+   $('#amt'+i).textContent=money(amt(i));
+   $('#qbox'+i).classList.toggle('edited',S.qty[i]!==items[i].qty);
+   const q=$('#qty'+i);if(document.activeElement!==q&&parseFloat(q.value)!==S.qty[i])q.value=S.qty[i];
+  });
+ });
+ // summary
+ const x=withExtras(selBase(b)),y=withExtras(selBase(other));
+ const name=mp>=0?PRESETS[mp].name+' · '+PRESETS[mp].label:'Custom selection';
+ $('#pkgName').textContent=name+(qtyEdited()?' (edited qty)':'');
+ $('#pkgCount').textContent=onCount+' of 10 elements';
+ tween($('#grand'),x.tot);
+ $('#lBase').textContent=money(x.base);
+ $('#lContLabel').textContent='Variation allowance '+S.cont+'%';
+ $('#lCont').textContent=money(x.c);
+ $('#lGstRow').hidden=!S.gst;
+ $('#lGstLabel').textContent='GST '+S.gstRate+'%';
+ $('#lGst').textContent=money(x.g);
+ $('#lTot').textContent=money(x.tot);
+ const d=y.tot-x.tot;
+ $('#alt').innerHTML=x.base===0?'Switch on at least one element to see a budget.':`Same scope at ${BASIS[other].toLowerCase()} rates: <b>${money(y.tot)}</b><br><span class="${d>0?'good':'bad'}">${money(Math.abs(d))} ${d>0?'more':'less'} (${Math.abs(d/x.tot*100).toFixed(0)}%) than the current basis</span>`;
+ document.querySelectorAll('#basisSeg button').forEach(bt=>bt.setAttribute('aria-pressed',bt.dataset.basis===b));
+ $('#contOut').textContent=S.cont+'%';$('#cont').value=S.cont;
+ $('#gstOn').checked=S.gst;$('#gstRate').disabled=!S.gst;
+ // composition
+ const cat={soft:0,hard:0,serv:0,feat:0};items.forEach((it,i)=>{if(S.inc[i])cat[GROUPS[gIndex[it.group]].cat]+=amt(i)});
+ const tot=x.base||1;
+ $('#stack').innerHTML=Object.entries(cat).map(([k,v])=>`<i style="flex-grow:${v};background:${CATS[k].color}" title="${CATS[k].name}"></i>`).join('');
+ $('#legend').innerHTML=Object.entries(cat).map(([k,v])=>`<div><span class="dot" style="background:${CATS[k].color}"></span><span>${CATS[k].name}</span><b class="num">${money(v)}</b><span class="pct num">${Math.round(v/tot*100)}%</span></div>`).join('');
+ // ladder
+ const vals=PRESETS.map((_,i)=>withExtras(presetBase(i,b)).tot),max=Math.max(...vals,x.tot)||1;
+ $('#ladder').innerHTML=vals.map((v,i)=>`<button class="lrow${mp===i?' cur':''}" data-p="${i}"><b>${PRESETS[i].name}</b><span class="track"><i style="width:${v/max*100}%"></i><span class="marker" style="left:calc(${x.tot/max*100}% - 1px)"></span></span><span class="v">${lakh(v)}</span></button>`).join('');
+ document.querySelectorAll('.lrow').forEach(r=>r.onclick=()=>applyPreset(+r.dataset.p));
+ // mobile bar
+ $('#mName').textContent=name;$('#mTotal').textContent=money(x.tot);
+ renderCompare();renderScope();renderAbout();
+}
+
+$('#basisSeg').onclick=e=>{const bt=e.target.closest('button');if(!bt)return;S.basis=bt.dataset.basis;save();update()};
+$('#cont').oninput=e=>{S.cont=+e.target.value;save();update()};
+$('#gstOn').onchange=e=>{S.gst=e.target.checked;save();update()};
+$('#gstRate').oninput=e=>{const v=parseFloat(e.target.value);S.gstRate=isFinite(v)?Math.max(0,Math.min(28,v)):0;save();update()};
+$('#resetQty').onclick=()=>{S.qty=items.map(it=>it.qty);items.forEach((it,i)=>$('#qty'+i).value=it.qty);save();update();toast('Quantities reset to BOQ')};
+$('#mJump').onclick=()=>{go('build');$('#rail').scrollIntoView({behavior:'smooth',block:'start'})};
+
+/* ---------- Compare ---------- */
+let cmp={scope:'all',cat:'all',q:'',sort:'diff',dir:-1};
+const catOf=it=>GROUPS[gIndex[it.group]].cat;
+Object.entries(CATS).forEach(([k,c])=>{const o=document.createElement('option');o.value=k;o.textContent=c.name;$('#cmpCat').appendChild(o)});
+function cmpRows(){
+ return items.map((it,i)=>{const e=amt(i,'ext'),a=amt(i,'ankura');return{i,it,e,a,d:e-a,p:a?(e-a)/a:0}})
+  .filter(r=>(cmp.scope==='all'||S.inc[r.i])&&(cmp.cat==='all'||catOf(r.it)===cmp.cat)&&(r.it.item+' '+r.it.group).toLowerCase().includes(cmp.q));
+}
+function renderCompare(){
+ const all=items.map((_,i)=>i).filter(i=>cmp.scope==='all'||S.inc[i]);
+ const E=all.reduce((s,i)=>s+amt(i,'ext'),0),A=all.reduce((s,i)=>s+amt(i,'ankura'),0);
+ $('#kpis').innerHTML=[
+  ['External team',money(E),cmp.scope==='all'?'Full BOQ':'Your selection'],
+  ['In-house Ankura Homes',money(A),cmp.scope==='all'?'Full BOQ':'Your selection'],
+  ['Difference',money(E-A),'External minus in-house'],
+  ['External is higher by',A?((E-A)/A*100).toFixed(1)+'%':'–','On the same quantities']
+ ].map(k=>`<div class="kpi"><span>${k[0]}</span><b class="num">${k[1]}</b><small>${k[2]}</small></div>`).join('');
+ const rows=cmpRows();
+ const key={item:r=>r.it.item,qty:r=>S.qty[r.i],e:r=>r.e,a:r=>r.a,diff:r=>r.d,pct:r=>r.p}[cmp.sort];
+ rows.sort((x,y)=>{const u=key(x),v=key(y);return (typeof u==='string'?u.localeCompare(v):u-v)*cmp.dir});
+ const maxAbs=Math.max(1,...rows.map(r=>Math.abs(r.d)));
+ const th=(k,l,r)=>`<th class="${r?'r':''}"><button data-sort="${k}" ${cmp.sort===k?`data-dir="${cmp.dir>0?'↑':'↓'}"`:''}>${l}</button></th>`;
+ const sums=rows.reduce((s,r)=>({e:s.e+r.e,a:s.a+r.a}),{e:0,a:0});
+ $('#cmpTable').innerHTML=`<thead><tr>${th('item','Item')}${th('qty','Qty',1)}<th class="r">Ext. rate</th><th class="r">In-house rate</th>${th('e','External',1)}${th('a','In-house',1)}${th('diff','Difference',1)}${th('pct','%',1)}<th>Gap</th></tr></thead>
+ <tbody>${rows.map(r=>{const w=Math.abs(r.d)/maxAbs*50;return `<tr><td>${esc(r.it.item)}<div class="sub"><span class="dot" style="background:${CATS[catOf(r.it)].color}"></span> ${esc(r.it.group)}</div></td><td class="r">${inr2.format(S.qty[r.i])} <span class="mono muted">${r.it.unit}</span></td><td class="r">${rateTxt(r.it.externalRate)}</td><td class="r">${rateTxt(r.it.ankuraRate)}</td><td class="r">${money(r.e)}</td><td class="r">${money(r.a)}</td><td class="r ${r.d>0?'bad':'good'}">${money(r.d)}</td><td class="r ${r.d>0?'bad':'good'}">${(r.p*100).toFixed(0)}%</td><td><div class="div"><i style="${r.d>=0?'left:50%':'right:50%'};width:${w}%;background:${r.d>0?'var(--bad)':'var(--good)'}"></i></div></td></tr>`}).join('')||'<tr><td colspan="9" class="muted">No items match. Clear the search or category filter.</td></tr>'}</tbody>
+ <tfoot><tr><td colspan="4">${rows.length} items shown</td><td class="r">${money(sums.e)}</td><td class="r">${money(sums.a)}</td><td class="r">${money(sums.e-sums.a)}</td><td class="r">${sums.a?((sums.e-sums.a)/sums.a*100).toFixed(0)+'%':''}</td><td></td></tr></tfoot>`;
+ document.querySelectorAll('#cmpTable th button').forEach(b=>b.onclick=()=>{const k=b.dataset.sort;if(cmp.sort===k)cmp.dir*=-1;else{cmp.sort=k;cmp.dir=k==='item'?1:-1}renderCompare()});
+ document.querySelectorAll('#cmpScope button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.scope===cmp.scope));
+}
+$('#cmpScope').onclick=e=>{const b=e.target.closest('button');if(!b)return;cmp.scope=b.dataset.scope;renderCompare()};
+$('#cmpCat').onchange=e=>{cmp.cat=e.target.value;renderCompare()};
+$('#cmpSearch').oninput=e=>{cmp.q=e.target.value.toLowerCase();renderCompare()};
+$('#copyCsv').onclick=()=>{
+ const rows=[['Element','Item','Unit','Quantity','External rate','In-house rate','External amount','In-house amount','Difference']];
+ cmpRows().forEach(r=>rows.push([r.it.group,r.it.item,r.it.unit,S.qty[r.i],r.it.externalRate,+r.it.ankuraRate.toFixed(2),Math.round(r.e),Math.round(r.a),Math.round(r.d)]));
+ copy(rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'),'#csvFallback','CSV copied. Paste into Excel or Sheets.');
+};
+
+/* ---------- Scope ---------- */
+function renderScope(){
+ const q=($('#scopeSearch').value||'').toLowerCase();let n=0;
+ $('#scopeGrid').innerHTML=GROUPS.map((g,gi)=>{
+  const idx=groupItems(gi).filter(i=>(items[i].item+' '+g.key).toLowerCase().includes(q));n+=idx.length;if(!idx.length)return'';
+  const on=idx.some(i=>S.inc[i]);
+  return `<div class="scard"><header><h3><span class="dot" style="background:${CATS[g.cat].color}"></span> ${esc(g.key)}</h3><span class="chip${on?' on':''}">${on?'In selection':'Not selected'}</span></header>${idx.map(i=>`<div class="sitem"><span>${esc(items[i].item)}</span><b>${inr2.format(S.qty[i])} <span class="mono muted">${items[i].unit}</span></b></div>`).join('')}</div>`;
+ }).join('')||'<p class="muted">No work items match that search.</p>';
+ $('#scopeCount').textContent=`${n} of ${items.length} line items`;
+}
+$('#scopeSearch').oninput=renderScope;
+
+/* ---------- Approval ---------- */
+function buildChecks(){
+ $('#checks').innerHTML=CHECKS.map((c,i)=>`<div class="check" id="ck${i}"><label><input type="checkbox" id="cb${i}"> ${c[0]}</label><p>${c[1]}</p><textarea id="cn${i}" placeholder="Notes, who is responsible, date received…" aria-label="Notes for ${c[0]}">${esc(S.notes[i]||'')}</textarea></div>`).join('');
+ CHECKS.forEach((_,i)=>{
+  $('#cb'+i).checked=!!S.checks[i];
+  $('#cb'+i).onchange=e=>{S.checks[i]=e.target.checked;save();progress()};
+  $('#cn'+i).oninput=e=>{S.notes[i]=e.target.value;save()};
+ });
+ progress();
+}
+function progress(){
+ const n=S.checks.filter(Boolean).length,p=Math.round(n/CHECKS.length*100);
+ $('#chkText').textContent=`${n} of ${CHECKS.length} confirmed`;$('#chkPct').textContent=p+'%';$('#chkBar').style.width=p+'%';
+ $('#tabCheck').textContent=`${n}/${CHECKS.length}`;
+ CHECKS.forEach((_,i)=>$('#ck'+i).classList.toggle('done',!!S.checks[i]));
+}
+
+/* ---------- Summary copy ---------- */
+$('#copySummary').onclick=()=>{
+ const b=S.basis,x=withExtras(selBase(b)),mp=matchPreset();
+ const lines=['Modern East Villa – landscape budget',`Package: ${mp>=0?PRESETS[mp].name+' ('+PRESETS[mp].label+')':'Custom selection'}${qtyEdited()?', quantities edited':''}`,`Rates: ${BASIS[b]}`,'','Included:'];
+ GROUPS.forEach((g,gi)=>{const v=groupItems(gi).reduce((s,i)=>s+(S.inc[i]?amt(i):0),0);if(v)lines.push(`  ${g.key}: ${money(v)}`)});
+ const ex=GROUPS.filter((g,gi)=>!groupItems(gi).some(i=>S.inc[i])).map(g=>g.key);
+ if(ex.length)lines.push('Not included: '+ex.join(', '));
+ lines.push('',`Works: ${money(x.base)}`);
+ if(S.cont)lines.push(`Variation allowance ${S.cont}%: ${money(x.c)}`);
+ if(S.gst)lines.push(`GST ${S.gstRate}%: ${money(x.g)}`);
+ lines.push(`Estimated total: ${money(x.tot)}`,'',S.gst?'Transport excluded.':'GST and transport excluded.');
+ copy(lines.join('\n'),null,'Summary copied. Paste into WhatsApp or email.');
+};
+
+function renderAbout(){
+ const b=S.basis;
+ const pk=[0,1,2].map(i=>presetBase(i,'ankura')),ext=presetBase(2,'ext'),ank=presetBase(2,'ankura');
+ $('#aboutDecide').innerHTML=`
+  <div class="decide"><span class="q">Decision 1 · Scope</span><h4>Which package to build?</h4><b class="big num">${lakh(pk[0])} – ${lakh(pk[2])}</b><p>DEFAULT covers the essentials. PACK-1 adds ${lakh(pk[1]-pk[0])} of design features; PACK-2 adds a further ${lakh(pk[2]-pk[1])} for the pond, sculpture and seating. In-house rates.</p></div>
+  <div class="decide"><span class="q">Decision 2 · Who executes</span><h4>In-house team or external team?</h4><b class="big num">${lakh(ext-ank)} gap</b><p>On the full BOQ the external landscape team is ${((ext-ank)/ank*100).toFixed(0)}% costlier than the in-house rates (${lakh(ext)} vs ${lakh(ank)}), on identical quantities.</p></div>
+  <div class="decide"><span class="q">Decision 3 · Allowances</span><h4>What to keep in reserve?</h4><b class="big num">10–15%</b><p>The BOQ flags this much variation on site, and excludes GST and transport. Irrigation and lighting are lump sums until detailed schedules arrive.</p></div>`;
+ $('#aboutPacks').innerHTML=PRESETS.map((p,i)=>{
+  const gs=GROUPS.filter(g=>g.tier<=i);
+  return `<div class="apack"><header><b>${p.name}</b><span class="chip">${p.label}</span></header>
+   <div class="price num">${money(presetBase(i,b))}</div>
+   <p>${p.desc}</p>
+   ${i?`<span class="plus">Everything in ${PRESETS[i-1].name}, plus</span>`:''}
+   <div class="tags">${gs.filter(g=>g.tier===i).map(g=>`<span class="new"><span class="dot" style="background:${CATS[g.cat].color}"></span>${esc(g.key)}</span>`).join('')}</div>
+   <button class="btn" data-pick="${i}">View ${p.name} in the builder</button></div>`}).join('');
+ document.querySelectorAll('[data-pick]').forEach(bt=>bt.onclick=()=>{applyPreset(+bt.dataset.pick);nav('build')});
+}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-go]');if(!t)return;e.preventDefault();nav(t.dataset.go)});
+function nav(v){location.hash=v;go(v);window.scrollTo({top:document.querySelector('.hero').offsetHeight,behavior:'smooth'})}
+
+/* ---------- Helpers & routing ---------- */
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1900)}
+function copy(text,fallbackSel,msg){
+ const fb=()=>{const host=fallbackSel?$(fallbackSel):$('#v-build .vhead');let ta=document.querySelector('textarea.fallback');if(!ta){ta=document.createElement('textarea');ta.className='fallback';ta.setAttribute('aria-label','Copy this text');host.appendChild(ta)}ta.value=text;ta.focus();ta.select();toast('Select all and copy the text below')};
+ try{navigator.clipboard.writeText(text).then(()=>toast(msg),fb)}catch(e){fb()}
+}
+const VIEWS=['about','build','compare','scope','approve'];
+function go(v){
+ if(!VIEWS.includes(v))v='about';
+ VIEWS.forEach(n=>$('#v-'+n).hidden=n!==v);
+ document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.view===v));
+ $('#mbar').hidden=v!=='build';
+}
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{location.hash=t.dataset.view;go(t.dataset.view);window.scrollTo({top:document.querySelector('.hero').offsetHeight,behavior:'smooth'})});
+addEventListener('hashchange',()=>go(location.hash.slice(1)));
+
+buildPresets();buildGroups();buildChecks();
+shown=withExtras(selBase(S.basis)).tot;
+update();go(location.hash.slice(1));
+</script>
+
+</body>
+</html>
