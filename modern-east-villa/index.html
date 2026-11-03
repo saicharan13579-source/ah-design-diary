@@ -41,6 +41,7 @@
  --blob1:#1d4fae;--blob2:#0d7a85;--blob3:#5a32a8;color-scheme:dark}
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);min-height:100vh}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
 button,input,select{font:inherit;color:inherit}
@@ -79,7 +80,8 @@ main.inner{padding-block:26px 90px}
 .vhead p{margin:4px 0 0;color:var(--muted);max-width:62ch;font-size:14px}
 
 /* Presets */
-.presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.presets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px}
+@media (max-width:1100px){.presets,.about-packs{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .preset{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;gap:2px;transition:border-color .15s,transform .15s}
 .preset:hover{border-color:var(--accent);transform:translateY(-1px)}
 .preset[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--soft)}
@@ -295,7 +297,7 @@ textarea.fallback{width:100%;min-height:140px;margin-top:10px;font:12px var(--f-
 .about-figs b{font-family:var(--f-display);font-size:26px;font-weight:700}
 .about-figs small{font-family:var(--f-mono);font-size:11px;color:var(--muted);font-weight:500}
 .about-h{font-size:20px;margin:30px 0 12px}
-.about-packs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.about-packs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .apack{background:var(--surface);-webkit-backdrop-filter:blur(20px) saturate(170%);backdrop-filter:blur(20px) saturate(170%);border:1px solid var(--glass-border);box-shadow:var(--glass-shadow);border-radius:var(--r);padding:18px;display:grid;gap:10px;align-content:start}
 .apack header{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .apack header b{font-family:var(--f-display);font-size:16px}
@@ -360,9 +362,9 @@ textarea.fallback{width:100%;min-height:140px;margin-top:10px;font:12px var(--f-
   <h1>Modern East Villa landscape</h1>
   <p>Start from a package, then switch individual elements on or off, adjust quantities and see the budget update as you go. GST and transport are excluded in the source BOQ; add them here if you need an all-in figure.</p>
   <div class="hero-facts">
-   <div><b class="num">29</b><span>BOQ line items</span></div>
-   <div><b class="num">10</b><span>landscape elements</span></div>
-   <div><b class="num">3</b><span>scope packages</span></div>
+   <div><b class="num">60</b><span>line items</span></div>
+   <div><b class="num">15</b><span>landscape elements</span></div>
+   <div><b class="num">4</b><span>scope options</span></div>
    <div><b class="num">2</b><span>rate columns compared</span></div>
   </div>
  </div>
@@ -386,7 +388,7 @@ textarea.fallback{width:100%;min-height:140px;margin-top:10px;font:12px var(--f-
   <div>
    <span class="chip">Summary for management</span>
    <h2>Landscape options for Modern East Villa</h2>
-   <p>This page sets out the landscape works for Modern East Villa as three scope options, all priced from the same bill of quantities. Each option builds on the one before it. It also compares what the work costs if done by the in-house Ankura Homes team versus the external landscape team.</p>
+   <p>This page sets out the landscape works for Modern East Villa as four scope options. DEFAULT, PACK-1 and PACK-2 are priced from the same bill of quantities, each building on the one before. FARM 2024 is the basic farm-villa default plan from March 2024, shown for reference. It also compares what the work costs if done by the in-house Ankura Homes team versus the external landscape team.</p>
    <div class="btnrow" style="margin-top:16px"><button class="btn primary" data-go="build">Explore the options</button><button class="btn" data-go="compare">See the rate comparison</button></div>
   </div>
   <div class="about-figs">
@@ -400,12 +402,12 @@ textarea.fallback{width:100%;min-height:140px;margin-top:10px;font:12px var(--f-
  <h3 class="about-h">Decisions needed</h3>
  <div class="about-decide" id="aboutDecide"></div>
 
- <h3 class="about-h">The three options</h3>
+ <h3 class="about-h">The four options</h3>
  <div class="about-packs" id="aboutPacks"></div>
 
  <h3 class="about-h">How to use this page</h3>
  <ol class="about-steps">
-  <li><b>Pick a starting option</b><span>Choose DEFAULT, PACK-1 or PACK-2 in <a href="#build" data-go="build">Build the budget</a>.</span></li>
+  <li><b>Pick a starting option</b><span>Choose DEFAULT, PACK-1, PACK-2 or FARM 2024 in <a href="#build" data-go="build">Build the budget</a>.</span></li>
   <li><b>Tailor it</b><span>Switch individual elements on or off, or adjust a quantity. The total updates instantly.</span></li>
   <li><b>Check the rates</b><span><a href="#compare" data-go="compare">Rate comparison</a> shows the in-house and external landscape team prices line by line.</span></li>
   <li><b>Close the open points</b><span><a href="#approve" data-go="approve">Before approval</a> lists what to confirm before a work order is issued.</span></li>
@@ -439,7 +441,7 @@ textarea.fallback{width:100%;min-height:140px;margin-top:10px;font:12px var(--f-
 <!-- BUILD -->
 <section class="view" id="v-build" hidden>
  <div class="vhead">
-  <div><h2>Build the landscape budget</h2><p>Each package adds to the one before it. Pick one as a starting point, then fine-tune element by element.</p></div>
+  <div><h2>Build the landscape budget</h2><p>DEFAULT, PACK-1 and PACK-2 build on each other. FARM 2024 is a separate basic plan. Pick one as a starting point, then fine-tune element by element.</p></div>
   <div class="btnrow"><button class="btn" id="resetQty">Reset quantities</button><button class="btn" id="copySummary">Copy summary</button></div>
  </div>
  <div class="presets" id="presets"></div>
@@ -527,7 +529,7 @@ textarea.fallback{width:100%;min-height:140px;margin-top:10px;font:12px var(--f-
  <div class="callout"><b>Commercial notes from the source BOQ.</b> GST and transportation are excluded. A 10–15% variation is possible during site execution. Irrigation and lighting are lump-sum allowances until itemised schedules are received.</div>
 </section>
 
-<footer>Source: Modern East Villa Landscape BOQ Basic, updated 27-10-2026. Amounts are quantity × rate from the two source rate columns, rounded to whole rupees. Confirm all figures against the signed BOQ and approved drawings before procurement.</footer>
+<footer>Sources: Modern East Villa Landscape BOQ Basic, updated 27-10-2026; FARM 2024 option from Default Landscaping Plan, Mar 2024 (costing sheet, total ₹1,75,600). Amounts are quantity × rate from the two source rate columns, rounded to whole rupees. Confirm all figures against the signed BOQ and approved drawings before procurement.</footer>
 </main>
 
 <div class="mbar" id="mbar"><div><div class="mono muted" id="mName">DEFAULT</div><b class="num" id="mTotal">₹0</b></div><button class="btn primary" id="mJump">Summary</button></div>
@@ -535,8 +537,9 @@ textarea.fallback{width:100%;min-height:140px;margin-top:10px;font:12px var(--f-
 
 <script>
 const items=[{"group":"Planter wall","item":"Earthwork excavation","unit":"CFT","qty":891,"externalRate":13,"ankuraRate":8.4952143626},{"group":"Planter wall","item":"PCC 1:4:8 foundation / bed","unit":"CFT","qty":295,"externalRate":100,"ankuraRate":121.0568046667},{"group":"Planter wall","item":"50 mm stone kerbing, CM 1:4 + grout","unit":"RFT","qty":594,"externalRate":135,"ankuraRate":125},{"group":"Lawn-side stepping","item":"Earthwork excavation","unit":"CFT","qty":1008,"externalRate":13,"ankuraRate":8.4952143626},{"group":"Lawn-side stepping","item":"River sand bed, 50 mm","unit":"CFT","qty":224,"externalRate":120,"ankuraRate":95},{"group":"Lawn-side stepping","item":"40 mm natural stepping stone","unit":"SFT","qty":560,"externalRate":160,"ankuraRate":134},{"group":"Deck under pergola","item":"Earthwork excavation","unit":"CFT","qty":260,"externalRate":13,"ankuraRate":8.4952143626},{"group":"Deck under pergola","item":"PCC 1:4:8 base","unit":"CFT","qty":95,"externalRate":100,"ankuraRate":121.0568046667},{"group":"Deck under pergola","item":"600×200×100 mm block masonry","unit":"SFT","qty":40,"externalRate":95,"ankuraRate":75},{"group":"Deck under pergola","item":"16 mm wooden tile paving + grout","unit":"SFT","qty":286,"externalRate":220,"ankuraRate":175},{"group":"Stepping stones","item":"Earthwork excavation","unit":"CFT","qty":275,"externalRate":13,"ankuraRate":8.4952143626},{"group":"Stepping stones","item":"River sand bed, 50 mm","unit":"CFT","qty":16,"externalRate":120,"ankuraRate":95},{"group":"Stepping stones","item":"40 mm natural stepping stone","unit":"SFT","qty":305,"externalRate":160,"ankuraRate":134},{"group":"Parking","item":"Earthwork excavation","unit":"CFT","qty":310,"externalRate":13,"ankuraRate":8.4952143626},{"group":"Parking","item":"River sand bed, 50 mm","unit":"CFT","qty":125,"externalRate":120,"ankuraRate":95},{"group":"Parking","item":"65 mm paving blocks","unit":"SFT","qty":620,"externalRate":160,"ankuraRate":104},{"group":"Seating & elements","item":"Seating units (2 Nos.)","unit":"Nos","qty":2,"externalRate":25000,"ankuraRate":15000},{"group":"Seating & elements","item":"Sculpture (1 No.)","unit":"Nos","qty":1,"externalRate":25000,"ankuraRate":20000},{"group":"Seating & elements","item":"Natural pond with boulders (1 No.)","unit":"Nos","qty":1,"externalRate":250000,"ankuraRate":125000},{"group":"Lawn","item":"Red earth – 80% soil mix","unit":"CFT","qty":1720,"externalRate":85,"ankuraRate":40},{"group":"Lawn","item":"Vermicompost + neem cake + superphosphate + bonemeal – 20%","unit":"CFT","qty":431,"externalRate":60,"ankuraRate":30},{"group":"Lawn","item":"Korean carpet lawn: supply, levelling & fixing","unit":"SFT","qty":4300,"externalRate":22,"ankuraRate":20},{"group":"Planting","item":"Red earth – 70% soil mix","unit":"CFT","qty":3635,"externalRate":85,"ankuraRate":40},{"group":"Planting","item":"Manure – 20% soil mix","unit":"CFT","qty":1040,"externalRate":60,"ankuraRate":30},{"group":"Planting","item":"Vermicompost + neem cake + superphosphate + bonemeal + Thimit + Polydol – 10%","unit":"CFT","qty":520,"externalRate":50,"ankuraRate":30},{"group":"Planting","item":"Plants","unit":"Nos","qty":35,"externalRate":1200,"ankuraRate":800},{"group":"Planting","item":"Shrubs & ground covers","unit":"SFT","qty":2500,"externalRate":80,"ankuraRate":40},{"group":"Irrigation","item":"Drip irrigation – lump-sum allowance","unit":"LS","qty":1,"externalRate":170000,"ankuraRate":70000},{"group":"Lighting","item":"Landscape lighting – lump-sum allowance","unit":"LS","qty":1,"externalRate":250000,"ankuraRate":125000}];
+items.push(...[{"group": "Fruit trees", "item": "Mango (3 yr, 21×21 bag)", "unit": "Nos", "qty": 4, "externalRate": 500, "ankuraRate": 500, "set": "farm"}, {"group": "Fruit trees", "item": "Sapota", "unit": "Nos", "qty": 2, "externalRate": 500, "ankuraRate": 500, "set": "farm"}, {"group": "Fruit trees", "item": "Guava", "unit": "Nos", "qty": 2, "externalRate": 500, "ankuraRate": 500, "set": "farm"}, {"group": "Fruit trees", "item": "Pomegranate", "unit": "Nos", "qty": 1, "externalRate": 500, "ankuraRate": 500, "set": "farm"}, {"group": "Fruit trees", "item": "Amla", "unit": "Nos", "qty": 1, "externalRate": 500, "ankuraRate": 500, "set": "farm"}, {"group": "Fruit trees", "item": "Seetaphal", "unit": "Nos", "qty": 2, "externalRate": 500, "ankuraRate": 500, "set": "farm"}, {"group": "Fruit trees", "item": "Coconut", "unit": "Nos", "qty": 2, "externalRate": 500, "ankuraRate": 500, "set": "farm"}, {"group": "Fruit trees", "item": "Banana", "unit": "Nos", "qty": 3, "externalRate": 500, "ankuraRate": 500, "set": "farm"}, {"group": "Fruit trees", "item": "Sweet lime", "unit": "Nos", "qty": 1, "externalRate": 500, "ankuraRate": 500, "set": "farm"}, {"group": "Fruit trees", "item": "Jack", "unit": "Nos", "qty": 1, "externalRate": 500, "ankuraRate": 500, "set": "farm"}, {"group": "Fruit trees", "item": "Lime", "unit": "Nos", "qty": 1, "externalRate": 500, "ankuraRate": 500, "set": "farm"}, {"group": "Ornamental plants", "item": "Palms / Terminalia / ornamental (21×21)", "unit": "Nos", "qty": 10, "externalRate": 550, "ankuraRate": 550, "set": "farm"}, {"group": "Ornamental plants", "item": "Alocasia (13×13)", "unit": "Nos", "qty": 10, "externalRate": 60, "ankuraRate": 60, "set": "farm"}, {"group": "Ornamental plants", "item": "Areca palms (21×21)", "unit": "Nos", "qty": 10, "externalRate": 430, "ankuraRate": 430, "set": "farm"}, {"group": "Ornamental plants", "item": "Spider lily (7×8)", "unit": "Nos", "qty": 30, "externalRate": 20, "ankuraRate": 20, "set": "farm"}, {"group": "Ornamental plants", "item": "Black lily (7×8)", "unit": "Nos", "qty": 20, "externalRate": 20, "ankuraRate": 20, "set": "farm"}, {"group": "Ornamental plants", "item": "Pandanus (7×8)", "unit": "Nos", "qty": 30, "externalRate": 20, "ankuraRate": 20, "set": "farm"}, {"group": "Ornamental plants", "item": "Lantana / Gulphinia", "unit": "Nos", "qty": 100, "externalRate": 60, "ankuraRate": 60, "set": "farm"}, {"group": "Ornamental plants", "item": "Rhoeo (7×8)", "unit": "Nos", "qty": 100, "externalRate": 20, "ankuraRate": 20, "set": "farm"}, {"group": "Ornamental plants", "item": "Purple heart", "unit": "Nos", "qty": 100, "externalRate": 20, "ankuraRate": 20, "set": "farm"}, {"group": "Ornamental plants", "item": "Gulphinia", "unit": "Nos", "qty": 100, "externalRate": 30, "ankuraRate": 30, "set": "farm"}, {"group": "Ornamental plants", "item": "Salvia blue / catmint (7×8)", "unit": "Nos", "qty": 30, "externalRate": 20, "ankuraRate": 20, "set": "farm"}, {"group": "Ornamental plants", "item": "Plumeria", "unit": "Nos", "qty": 20, "externalRate": 120, "ankuraRate": 120, "set": "farm"}, {"group": "Ornamental plants", "item": "Thuja", "unit": "Nos", "qty": 2, "externalRate": 550, "ankuraRate": 550, "set": "farm"}, {"group": "Lawn & levelling", "item": "Lawn with initial weeding", "unit": "SFT", "qty": 2000, "externalRate": 10, "ankuraRate": 10, "set": "farm"}, {"group": "Lawn & levelling", "item": "Lawn installation & levelling", "unit": "LS", "qty": 1, "externalRate": 25000, "ankuraRate": 25000, "set": "farm"}, {"group": "Hardscape & parking", "item": "Hardscaping / pathway", "unit": "SFT", "qty": 500, "externalRate": 20, "ankuraRate": 20, "set": "farm"}, {"group": "Hardscape & parking", "item": "Precast & gravel filling (parking)", "unit": "LS", "qty": 1, "externalRate": 25000, "ankuraRate": 25000, "set": "farm"}, {"group": "Soil, machinery & labour", "item": "Compost, manure, neem cake & soil", "unit": "LS", "qty": 1, "externalRate": 20000, "ankuraRate": 20000, "set": "farm"}, {"group": "Soil, machinery & labour", "item": "JCB / tractor charges", "unit": "LS", "qty": 1, "externalRate": 20000, "ankuraRate": 20000, "set": "farm"}, {"group": "Soil, machinery & labour", "item": "Transportation & labour (Kadiyam)", "unit": "LS", "qty": 1, "externalRate": 16500, "ankuraRate": 16500, "set": "farm"}]);
 
-const CATS={soft:{name:'Softscape',color:'var(--c-soft)'},hard:{name:'Hardscape',color:'var(--c-hard)'},serv:{name:'Irrigation & lighting',color:'var(--c-serv)'},feat:{name:'Feature elements',color:'var(--c-feat)'}};
+const CATS={soft:{name:'Softscape',color:'var(--c-soft)'},hard:{name:'Hardscape',color:'var(--c-hard)'},serv:{name:'Irrigation & lighting',color:'var(--c-serv)'},feat:{name:'Feature elements',color:'var(--c-feat)'},site:{name:'Soil, machinery & labour',color:'var(--muted)'}};
 const GROUPS=[
  {key:'Lawn',tier:0,cat:'soft',note:'4,300 sft Korean carpet lawn on an 80/20 red earth and compost bed.'},
  {key:'Planting',tier:0,cat:'soft',note:'35 plants plus 2,500 sft of shrubs and ground covers, with soil mix.'},
@@ -547,12 +550,18 @@ const GROUPS=[
  {key:'Deck under pergola',tier:1,cat:'hard',note:'286 sft wooden-finish tile deck on block masonry.'},
  {key:'Stepping stones',tier:1,cat:'hard',note:'305 sft of additional stepping stones.'},
  {key:'Lighting',tier:1,cat:'serv',note:'Landscape lighting, lump-sum allowance.'},
- {key:'Seating & elements',tier:2,cat:'feat',note:'2 seating units, a sculpture and a natural pond with boulders.'}
+ {key:'Seating & elements',tier:2,cat:'feat',note:'2 seating units, a sculpture and a natural pond with boulders.'},
+ {key:'Fruit trees',tier:3,cat:'soft',note:'20 fruit trees, 3 years old: mango, sapota, guava, coconut, banana and more.'},
+ {key:'Ornamental plants',tier:3,cat:'soft',note:'562 ornamentals: palms, areca, lilies, pandanus, lantana, rhoeo, purple heart, plumeria.'},
+ {key:'Lawn & levelling',tier:3,cat:'soft',note:'2,000 sft lawn with initial weeding, plus installation and levelling.'},
+ {key:'Hardscape & parking',tier:3,cat:'hard',note:'500 sft of pathway hardscape and precast + gravel parking.'},
+ {key:'Soil, machinery & labour',tier:3,cat:'site',note:'Compost, manure and soil; JCB / tractor; transport and labour from Kadiyam.'}
 ];
 const PRESETS=[
  {name:'DEFAULT',label:'Essential',desc:'Lawn, planting, access paving, parking and drip irrigation.'},
  {name:'PACK-1',label:'Enhanced',desc:'Adds planter wall, pergola deck, more stepping stones and lighting.'},
- {name:'PACK-2',label:'Complete',desc:'Adds seating, sculpture and the natural pond. Every BOQ element.'}
+ {name:'PACK-2',label:'Complete',desc:'Adds seating, sculpture and the natural pond. Every BOQ element.'},
+ {name:'FARM 2024',label:'Basic default',desc:'Farm villa default plan, Mar 2024: fruit trees, ornamentals, 2,000 sft lawn, pathway and parking.',farm:true}
 ];
 const BASIS={ankura:'In-house Ankura Homes',ext:'External landscape team'};
 const CHECKS=[
@@ -566,6 +575,10 @@ const CHECKS=[
 
 const gIndex=Object.fromEntries(GROUPS.map((g,i)=>[g.key,i]));
 const tierOf=it=>GROUPS[gIndex[it.group]].tier;
+const isFarm=it=>it.set==='farm';
+const inPreset=(it,p)=>PRESETS[p].farm?isFarm(it):(!isFarm(it)&&tierOf(it)<=p);
+const curSet=()=>S.set||'mev';
+const inSet=it=>(curSet()==='farm')===isFarm(it);
 const inr=new Intl.NumberFormat('en-IN',{maximumFractionDigits:0});
 const inr2=new Intl.NumberFormat('en-IN',{maximumFractionDigits:2});
 const money=n=>(n<0?'−₹':'₹')+inr.format(Math.abs(Math.round(n)));
@@ -574,8 +587,8 @@ const lakh=n=>'₹'+(n/1e5).toFixed(2)+' L';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-const KEY='mev-landscape-v2';
-function fresh(){return{inc:items.map(it=>tierOf(it)<=0),qty:items.map(it=>it.qty),basis:'ankura',cont:0,gst:false,gstRate:18,checks:CHECKS.map(()=>false),notes:CHECKS.map(()=>''),open:{}}}
+const KEY='mev-landscape-v3';
+function fresh(){return{set:'mev',inc:items.map(it=>inPreset(it,0)),qty:items.map(it=>it.qty),basis:'ankura',cont:0,gst:false,gstRate:18,checks:CHECKS.map(()=>false),notes:CHECKS.map(()=>''),open:{}}}
 let S=fresh();
 try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.inc)&&s.inc.length===items.length)S=Object.assign(fresh(),s)}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -583,18 +596,18 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const rate=(it,b)=>b==='ext'?it.externalRate:it.ankuraRate;
 const amt=(i,b=S.basis)=>S.qty[i]*rate(items[i],b);
 const selBase=b=>items.reduce((s,_,i)=>s+(S.inc[i]?amt(i,b):0),0);
-const presetBase=(p,b)=>items.reduce((s,it,i)=>s+(tierOf(it)<=p?amt(i,b):0),0);
+const presetBase=(p,b)=>items.reduce((s,it,i)=>s+(inPreset(it,p)?amt(i,b):0),0);
 const withExtras=base=>{const c=base*S.cont/100,g=S.gst?(base+c)*S.gstRate/100:0;return{base,c,g,tot:base+c+g}};
-function matchPreset(){for(let p=0;p<3;p++)if(items.every((it,i)=>S.inc[i]===(tierOf(it)<=p)))return p;return -1}
+function matchPreset(){for(let p=0;p<PRESETS.length;p++)if(items.every((it,i)=>S.inc[i]===inPreset(it,p)))return p;return -1}
 const groupItems=gi=>items.map((it,i)=>i).filter(i=>gIndex[items[i].group]===gi);
-const qtyEdited=()=>items.some((it,i)=>S.qty[i]!==it.qty);
+const qtyEdited=()=>items.some((it,i)=>inSet(it)&&S.qty[i]!==it.qty);
 
 /* ---------- Build view ---------- */
 function buildPresets(){
  $('#presets').innerHTML=PRESETS.map((p,i)=>`<button class="preset" data-p="${i}" aria-pressed="false"><span class="pn"><b>${p.name}</b><span class="chip">${p.label}</span></span><span class="pv num" id="pv${i}"></span><small>${p.desc}</small></button>`).join('');
  document.querySelectorAll('.preset').forEach(b=>b.onclick=()=>applyPreset(+b.dataset.p));
 }
-function applyPreset(p){S.inc=items.map(it=>tierOf(it)<=p);save();update();toast(PRESETS[p].name+' loaded')}
+function applyPreset(p){S.set=PRESETS[p].farm?'farm':'mev';S.inc=items.map(it=>inPreset(it,p));save();update();toast(PRESETS[p].name+' loaded')}
 
 function buildGroups(){
  $('#groups').innerHTML=GROUPS.map((g,gi)=>{
@@ -646,7 +659,8 @@ function update(){
  GROUPS.forEach((g,gi)=>{
   const idx=groupItems(gi),on=idx.filter(i=>S.inc[i]).length;
   const st=on===0?'false':on===idx.length?'true':'mixed';
-  if(on>0)onCount++;
+  const vis=(curSet()==='farm')===(g.tier===3);$('#card'+gi).hidden=!vis;
+  if(on>0&&vis)onCount++;
   $('#sw'+gi).setAttribute('aria-checked',st);
   $('#card'+gi).classList.toggle('off',on===0);
   $('#sub'+gi).textContent=money(idx.reduce((s,i)=>s+(S.inc[i]?amt(i):0),0));
@@ -663,7 +677,7 @@ function update(){
  const x=withExtras(selBase(b)),y=withExtras(selBase(other));
  const name=mp>=0?PRESETS[mp].name+' · '+PRESETS[mp].label:'Custom selection';
  $('#pkgName').textContent=name+(qtyEdited()?' (edited qty)':'');
- $('#pkgCount').textContent=onCount+' of 10 elements';
+ $('#pkgCount').textContent=onCount+' of '+GROUPS.filter(g=>(curSet()==='farm')===(g.tier===3)).length+' elements';
  tween($('#grand'),x.tot);
  $('#lBase').textContent=money(x.base);
  $('#lContLabel').textContent='Variation allowance '+S.cont+'%';
@@ -673,15 +687,16 @@ function update(){
  $('#lGst').textContent=money(x.g);
  $('#lTot').textContent=money(x.tot);
  const d=y.tot-x.tot;
- $('#alt').innerHTML=x.base===0?'Switch on at least one element to see a budget.':`Same scope at ${BASIS[other].toLowerCase()} rates: <b>${money(y.tot)}</b><br><span class="${d>0?'good':'bad'}">${money(Math.abs(d))} ${d>0?'more':'less'} (${Math.abs(d/x.tot*100).toFixed(0)}%) than the current basis</span>`;
- document.querySelectorAll('#basisSeg button').forEach(bt=>bt.setAttribute('aria-pressed',bt.dataset.basis===b));
+ $('#alt').innerHTML=curSet()==='farm'?`Single rate column from the March 2024 costing sheet, so the rate basis switch does not apply. These are 2024 rates.`:x.base===0?'Switch on at least one element to see a budget.':`Same scope at ${BASIS[other].toLowerCase()} rates: <b>${money(y.tot)}</b><br><span class="${d>0?'good':'bad'}">${money(Math.abs(d))} ${d>0?'more':'less'} (${Math.abs(d/x.tot*100).toFixed(0)}%) than the current basis</span>`;
+ document.querySelectorAll('#basisSeg button').forEach(bt=>{bt.setAttribute('aria-pressed',bt.dataset.basis===b);bt.disabled=curSet()==='farm'});$('#basisSeg').style.opacity=curSet()==='farm'?.45:1;
  $('#contOut').textContent=S.cont+'%';$('#cont').value=S.cont;
  $('#gstOn').checked=S.gst;$('#gstRate').disabled=!S.gst;
  // composition
- const cat={soft:0,hard:0,serv:0,feat:0};items.forEach((it,i)=>{if(S.inc[i])cat[GROUPS[gIndex[it.group]].cat]+=amt(i)});
+ const cat={soft:0,hard:0,serv:0,feat:0,site:0};items.forEach((it,i)=>{if(S.inc[i])cat[GROUPS[gIndex[it.group]].cat]+=amt(i)});
  const tot=x.base||1;
- $('#stack').innerHTML=Object.entries(cat).map(([k,v])=>`<i style="flex-grow:${v};background:${CATS[k].color}" title="${CATS[k].name}"></i>`).join('');
- $('#legend').innerHTML=Object.entries(cat).map(([k,v])=>`<div><span class="dot" style="background:${CATS[k].color}"></span><span>${CATS[k].name}</span><b class="num">${money(v)}</b><span class="pct num">${Math.round(v/tot*100)}%</span></div>`).join('');
+ const catE=Object.entries(cat).filter(([k,v])=>v>0);
+ $('#stack').innerHTML=catE.map(([k,v])=>`<i style="flex-grow:${v};background:${CATS[k].color}" title="${CATS[k].name}"></i>`).join('');
+ $('#legend').innerHTML=catE.map(([k,v])=>`<div><span class="dot" style="background:${CATS[k].color}"></span><span>${CATS[k].name}</span><b class="num">${money(v)}</b><span class="pct num">${Math.round(v/tot*100)}%</span></div>`).join('');
  // ladder
  const vals=PRESETS.map((_,i)=>withExtras(presetBase(i,b)).tot),max=Math.max(...vals,x.tot)||1;
  $('#ladder').innerHTML=vals.map((v,i)=>`<button class="lrow${mp===i?' cur':''}" data-p="${i}"><b>${PRESETS[i].name}</b><span class="track"><i style="width:${v/max*100}%"></i><span class="marker" style="left:calc(${x.tot/max*100}% - 1px)"></span></span><span class="v">${lakh(v)}</span></button>`).join('');
@@ -701,13 +716,13 @@ $('#mJump').onclick=()=>{go('build');$('#rail').scrollIntoView({behavior:'smooth
 /* ---------- Compare ---------- */
 let cmp={scope:'all',cat:'all',q:'',sort:'diff',dir:-1};
 const catOf=it=>GROUPS[gIndex[it.group]].cat;
-Object.entries(CATS).forEach(([k,c])=>{const o=document.createElement('option');o.value=k;o.textContent=c.name;$('#cmpCat').appendChild(o)});
+Object.entries(CATS).filter(([k])=>k!=='site').forEach(([k,c])=>{const o=document.createElement('option');o.value=k;o.textContent=c.name;$('#cmpCat').appendChild(o)});
 function cmpRows(){
  return items.map((it,i)=>{const e=amt(i,'ext'),a=amt(i,'ankura');return{i,it,e,a,d:e-a,p:a?(e-a)/a:0}})
-  .filter(r=>(cmp.scope==='all'||S.inc[r.i])&&(cmp.cat==='all'||catOf(r.it)===cmp.cat)&&(r.it.item+' '+r.it.group).toLowerCase().includes(cmp.q));
+  .filter(r=>!isFarm(r.it)&&(cmp.scope==='all'||S.inc[r.i])&&(cmp.cat==='all'||catOf(r.it)===cmp.cat)&&(r.it.item+' '+r.it.group).toLowerCase().includes(cmp.q));
 }
 function renderCompare(){
- const all=items.map((_,i)=>i).filter(i=>cmp.scope==='all'||S.inc[i]);
+ const all=items.map((_,i)=>i).filter(i=>!isFarm(items[i])&&(cmp.scope==='all'||S.inc[i]));
  const E=all.reduce((s,i)=>s+amt(i,'ext'),0),A=all.reduce((s,i)=>s+amt(i,'ankura'),0);
  $('#kpis').innerHTML=[
   ['External team',money(E),cmp.scope==='all'?'Full BOQ':'Your selection'],
@@ -742,7 +757,7 @@ function renderScope(){
  $('#scopeGrid').innerHTML=GROUPS.map((g,gi)=>{
   const idx=groupItems(gi).filter(i=>(items[i].item+' '+g.key).toLowerCase().includes(q));n+=idx.length;if(!idx.length)return'';
   const on=idx.some(i=>S.inc[i]);
-  return `<div class="scard"><header><h3><span class="dot" style="background:${CATS[g.cat].color}"></span> ${esc(g.key)}</h3><span class="chip${on?' on':''}">${on?'In selection':'Not selected'}</span></header>${idx.map(i=>`<div class="sitem"><span>${esc(items[i].item)}</span><b>${inr2.format(S.qty[i])} <span class="mono muted">${items[i].unit}</span></b></div>`).join('')}</div>`;
+  return `<div class="scard"><header><h3><span class="dot" style="background:${CATS[g.cat].color}"></span> ${esc(g.key)}${g.tier===3?' <span class="chip">FARM 2024</span>':''}</h3><span class="chip${on?' on':''}">${on?'In selection':'Not selected'}</span></header>${idx.map(i=>`<div class="sitem"><span>${esc(items[i].item)}</span><b>${inr2.format(S.qty[i])} <span class="mono muted">${items[i].unit}</span></b></div>`).join('')}</div>`;
  }).join('')||'<p class="muted">No work items match that search.</p>';
  $('#scopeCount').textContent=`${n} of ${items.length} line items`;
 }
@@ -768,9 +783,9 @@ function progress(){
 /* ---------- Summary copy ---------- */
 $('#copySummary').onclick=()=>{
  const b=S.basis,x=withExtras(selBase(b)),mp=matchPreset();
- const lines=['Modern East Villa – landscape budget',`Package: ${mp>=0?PRESETS[mp].name+' ('+PRESETS[mp].label+')':'Custom selection'}${qtyEdited()?', quantities edited':''}`,`Rates: ${BASIS[b]}`,'','Included:'];
+ const lines=['Modern East Villa – landscape budget',`Package: ${mp>=0?PRESETS[mp].name+' ('+PRESETS[mp].label+')':'Custom selection'}${qtyEdited()?', quantities edited':''}`,curSet()==='farm'?'Rates: March 2024 costing sheet':`Rates: ${BASIS[b]}`,'','Included:'];
  GROUPS.forEach((g,gi)=>{const v=groupItems(gi).reduce((s,i)=>s+(S.inc[i]?amt(i):0),0);if(v)lines.push(`  ${g.key}: ${money(v)}`)});
- const ex=GROUPS.filter((g,gi)=>!groupItems(gi).some(i=>S.inc[i])).map(g=>g.key);
+ const ex=GROUPS.filter((g,gi)=>((curSet()==='farm')===(g.tier===3))&&!groupItems(gi).some(i=>S.inc[i])).map(g=>g.key);
  if(ex.length)lines.push('Not included: '+ex.join(', '));
  lines.push('',`Works: ${money(x.base)}`);
  if(S.cont)lines.push(`Variation allowance ${S.cont}%: ${money(x.c)}`);
@@ -783,16 +798,15 @@ function renderAbout(){
  const b=S.basis;
  const pk=[0,1,2].map(i=>presetBase(i,'ankura')),ext=presetBase(2,'ext'),ank=presetBase(2,'ankura');
  $('#aboutDecide').innerHTML=`
-  <div class="decide"><span class="q">Decision 1 · Scope</span><h4>Which package to build?</h4><b class="big num">${lakh(pk[0])} – ${lakh(pk[2])}</b><p>DEFAULT covers the essentials. PACK-1 adds ${lakh(pk[1]-pk[0])} of design features; PACK-2 adds a further ${lakh(pk[2]-pk[1])} for the pond, sculpture and seating. In-house rates.</p></div>
+  <div class="decide"><span class="q">Decision 1 · Scope</span><h4>Which package to build?</h4><b class="big num">${lakh(presetBase(3,'ankura'))} – ${lakh(pk[2])}</b><p>FARM 2024 is the basic farm-villa default at ${lakh(presetBase(3,'ankura'))} (2024 rates). DEFAULT covers the essentials at ${lakh(pk[0])}. PACK-1 adds ${lakh(pk[1]-pk[0])} of design features; PACK-2 adds a further ${lakh(pk[2]-pk[1])} for the pond, sculpture and seating. In-house rates.</p></div>
   <div class="decide"><span class="q">Decision 2 · Who executes</span><h4>In-house team or external team?</h4><b class="big num">${lakh(ext-ank)} gap</b><p>On the full BOQ the external landscape team is ${((ext-ank)/ank*100).toFixed(0)}% costlier than the in-house rates (${lakh(ext)} vs ${lakh(ank)}), on identical quantities.</p></div>
   <div class="decide"><span class="q">Decision 3 · Allowances</span><h4>What to keep in reserve?</h4><b class="big num">10–15%</b><p>The BOQ flags this much variation on site, and excludes GST and transport. Irrigation and lighting are lump sums until detailed schedules arrive.</p></div>`;
  $('#aboutPacks').innerHTML=PRESETS.map((p,i)=>{
-  const gs=GROUPS.filter(g=>g.tier<=i);
-  return `<div class="apack"><header><b>${p.name}</b><span class="chip">${p.label}</span></header>
+    return `<div class="apack"><header><b>${p.name}</b><span class="chip">${p.label}</span></header>
    <div class="price num">${money(presetBase(i,b))}</div>
    <p>${p.desc}</p>
-   ${i?`<span class="plus">Everything in ${PRESETS[i-1].name}, plus</span>`:''}
-   <div class="tags">${gs.filter(g=>g.tier===i).map(g=>`<span class="new"><span class="dot" style="background:${CATS[g.cat].color}"></span>${esc(g.key)}</span>`).join('')}</div>
+   ${p.farm?`<span class="plus">Separate plan · from the Default Landscaping Plan, Mar 2024</span>`:i?`<span class="plus">Everything in ${PRESETS[i-1].name}, plus</span>`:''}
+   <div class="tags">${GROUPS.filter(g=>g.tier===i).map(g=>`<span class="new"><span class="dot" style="background:${CATS[g.cat].color}"></span>${esc(g.key)}</span>`).join('')}</div>
    <button class="btn" data-pick="${i}">View ${p.name} in the builder</button></div>`}).join('');
  document.querySelectorAll('[data-pick]').forEach(bt=>bt.onclick=()=>{applyPreset(+bt.dataset.pick);nav('build')});
 }
