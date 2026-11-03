@@ -513,7 +513,7 @@ table.team tbody tr:hover{background:var(--paper-2)}
     <section class="card today" aria-label="Today at a glance">
       <div><p class="eyebrow">Logged today</p><div class="big" id="t-logged">0</div><div class="face-row" id="t-faces"></div></div>
       <div><p class="eyebrow">Still to log</p><div class="big" id="t-missing">–</div><div class="face-row" id="t-missing-faces"></div></div>
-      <div><p class="eyebrow">Updates this week</p><div class="big" id="t-hours">0</div><div class="sub" id="t-hours-sub">across the studio</div></div>
+      <div><p class="eyebrow">Hours this week</p><div class="big" id="t-hours">0</div><div class="sub" id="t-hours-sub">across the studio</div></div>
       <div><p class="eyebrow">Updates this week</p><div class="big" id="t-updates">0</div><div class="sub" id="t-updates-sub">Mon–Sat</div></div>
     </section>
 
@@ -549,6 +549,13 @@ table.team tbody tr:hover{background:var(--paper-2)}
         </div>
         <div class="row2">
           <div class="field"><label for="f-date">Date</label><input type="date" id="f-date" required></div>
+          <div class="field"><span class="lbl" id="hrs-lbl">Hours</span>
+            <div class="stepper" role="group" aria-labelledby="hrs-lbl">
+              <button type="button" id="h-minus" aria-label="Half an hour less">−</button>
+              <input type="number" id="f-hours" min="0.5" max="16" step="0.5" value="9" aria-labelledby="hrs-lbl">
+              <button type="button" id="h-plus" aria-label="Half an hour more">+</button>
+            </div>
+          </div>
         </div>
         <div class="row2">
           <div class="field"><label for="f-project">Project</label><select id="f-project"><option value="">Choose project…</option></select></div>
@@ -585,7 +592,7 @@ table.team tbody tr:hover{background:var(--paper-2)}
       </div>
       <div class="people-row" id="people-row" role="group" aria-label="Show summary for"></div>
       <div class="kpis" id="kpis"></div>
-      <div class="card chart-card"><h4 id="chart-title">Updates per day <span id="chart-sub"></span></h4><div class="bars-wrap"><div class="yax" id="yax"></div><div class="bars" id="bars"></div></div></div>
+      <div class="card chart-card"><h4 id="chart-title">Hours per day <span id="chart-sub"></span></h4><div class="bars-wrap"><div class="yax" id="yax"></div><div class="bars" id="bars"></div></div></div>
       <div class="breaks">
         <div class="card break"><h4>By project <span id="bp-sub"></span></h4><div id="by-project"></div></div>
         <div class="card break"><h4>By work stage <span id="bs-sub"></span></h4><div id="by-stage"></div></div>
@@ -762,7 +769,8 @@ function renderToday(){
   $("#t-missing").textContent = isSun ? "–" : missing.length;
   $("#t-missing-faces").innerHTML = isSun ? `<span style="font-size:13px;color:var(--ink-2)">Sunday, studio closed</span>` : missing.map(u => avatar(u,"ghosted")).join("") || `<span style="font-size:13px;color:var(--ink-2)">Everyone's in</span>`;
   const [a,b] = rangeFor("now"); const wk = between(a,b);
-  $("#t-hours").textContent = wk.length;
+  const hrs = wk.reduce((s,e) => s + (+e.hours||0), 0);
+  $("#t-hours").textContent = fmtH(hrs);
   $("#t-hours-sub").textContent = `${new Set(wk.map(e=>e.uid)).size} people · ${fmtShort(parse(a))} – ${fmtShort(parse(b))}`;
   $("#t-updates").textContent = wk.length;
   $("#t-updates-sub").textContent = `${wk.filter(e=>e.status==="blocked").length} blocked`;
@@ -776,10 +784,10 @@ function renderCalendar(){
   let html = "";
   for (let i=0;i<42;i++){
     const d = addDays(start,i); const ds = ymd(d); const list = by[ds] || [];
-    const uids = [...new Set(list.map(e=>e.uid))]; const hrs = list.reduce((s,e)=>s+1,0);
+    const uids = [...new Set(list.map(e=>e.uid))]; const hrs = list.reduce((s,e)=>s+(+e.hours||0),0);
     const cls = ["day", d.getMonth()!==m.getMonth()?"out":"", d.getDay()===0?"wk":"", ds===todayStr?"today":"", ds===S.selDate?"sel":""].join(" ");
     const heat = uids.length ? `<span class="heat" style="background:color-mix(in srgb,var(--accent) ${Math.round(8+30*Math.min(1,uids.length/team))}%,transparent)"></span>` : "";
-    html += `<button type="button" class="${cls}" data-date="${ds}" aria-label="${esc(fmtLong(ds))}, ${uids.length} people logged">${heat}<span class="n">${d.getDate()}</span><span class="dots">${uids.slice(0,8).map(u=>`<i class="dot" style="background:${colorOf(u)}" title="${esc(nameOf(u))}"></i>`).join("")}</span>${hrs?`<span class="hrs">${hrs} ${hrs===1?"update":"updates"}</span>`:""}</button>`;
+    html += `<button type="button" class="${cls}" data-date="${ds}" aria-label="${esc(fmtLong(ds))}, ${uids.length} people logged">${heat}<span class="n">${d.getDate()}</span><span class="dots">${uids.slice(0,8).map(u=>`<i class="dot" style="background:${colorOf(u)}" title="${esc(nameOf(u))}"></i>`).join("")}</span>${hrs?`<span class="hrs">${fmtH(hrs)} h</span>`:""}</button>`;
   }
   $("#cal-grid").innerHTML = html;
 }
@@ -791,7 +799,8 @@ function entryCard(e, showDate){
     <div class="meta"><span class="who">${esc(nameOf(e.uid))}</span>${roleOf(e.uid)?`<span style="color:var(--ink-2)">${esc(roleOf(e.uid))}</span>`:""}
       ${showDate?`<span class="mono" style="color:var(--ink-2);font-size:12px">${esc(fmtShort(parse(e.date)))}</span>`:""}
       ${e.by && e.by !== e.uid ? `<span style="color:var(--ink-2);font-size:12px">logged by ${esc(nameOf(e.by))}</span>` : ""}
-      <span class="pill st-${esc(e.status||"progress")}">${esc(STATUS_LBL[e.status]||"In progress")}</span></div>
+      <span class="pill st-${esc(e.status||"progress")}">${esc(STATUS_LBL[e.status]||"In progress")}</span>
+      <span class="mono" style="margin-left:auto">${fmtH(+e.hours||0)} h</span></div>
     <div class="meta" style="margin-top:6px"><span class="tag"><i class="sw" style="background:${catVar(e.project)}"></i>${esc(e.project)}</span>${e.unit?`<span class="tag">${esc(e.unit)}</span>`:""}${stagesOf(e).map(st => `<span class="tag">${esc(st)}</span>`).join("")}</div>
     <p class="note">${esc(e.note)}</p>
     ${e.next?`<p class="next">Next: ${esc(e.next)}</p>`:""}
@@ -802,8 +811,8 @@ function entryCard(e, showDate){
 function renderDay(){
   const list = between(S.selDate, S.selDate).sort((a,b) => nameOf(a.uid).localeCompare(nameOf(b.uid)) || (a.createdAt||"").localeCompare(b.createdAt||""));
   $("#dl-title").textContent = (S.selDate === todayStr ? "Today, " : "") + fmtLong(S.selDate);
-  const hrs = list.reduce((s,e)=>s+1,0);
-  $("#dl-hours").textContent = list.length ? `${list.length} update${list.length>1?"s":""}` : "";
+  const hrs = list.reduce((s,e)=>s+(+e.hours||0),0);
+  $("#dl-hours").textContent = list.length ? `${list.length} update${list.length>1?"s":""} · ${fmtH(hrs)} h` : "";
   $("#dl-entries").innerHTML = list.length ? list.map(e => entryCard(e,false)).join("")
     : `<div class="empty">${!S.db ? "Updates appear here once the diary connects." : S.selDate > todayStr ? "This day hasn't happened yet." : "No updates logged for this day. Use the form to add one."}</div>`;
   const logged = new Set(list.map(e=>e.uid));
@@ -883,7 +892,7 @@ function parsedLines(){
 function stagesOf(e){ return Array.isArray(e.stages) && e.stages.length ? e.stages : String(e.stage || "Other").split(/\s*,\s*/).filter(Boolean);
 }
 function splitHours(ps){
-  const total = 0;
+  const total = parseFloat($("#f-hours").value) || 0;
   const fixed = ps.filter(p => p.hours != null), free = ps.length - fixed.length;
   const rem = Math.max(0, total - fixed.reduce((t,p)=>t+p.hours,0));
   const each = free ? Math.max(0.25, Math.round(rem / free * 4) / 4) : 0;
@@ -901,7 +910,7 @@ function hbars(map, colorFn){
   const rows = Object.entries(map).sort((a,b)=>b[1]-a[1]); const tot = rows.reduce((s,r)=>s+r[1],0);
   if (!rows.length) return `<div class="empty">Nothing logged in this period.</div>`;
   const max = rows[0][1];
-  return rows.map(([k,v]) => `<div class="hbar"><span class="nm"><i style="width:10px;height:10px;border-radius:2px;flex:none;background:${colorFn(k)}"></i><b>${esc(k)}</b></span><span class="val">${v} ${v===1?"update":"updates"} · ${Math.round(v/tot*100)}%</span><span class="tr"><i style="width:${(v/max*100).toFixed(1)}%;background:${colorFn(k)}"></i></span></div>`).join("");
+  return rows.map(([k,v]) => `<div class="hbar"><span class="nm"><i style="width:10px;height:10px;border-radius:2px;flex:none;background:${colorFn(k)}"></i><b>${esc(k)}</b></span><span class="val">${fmtH(v)} h · ${Math.round(v/tot*100)}%</span><span class="tr"><i style="width:${(v/max*100).toFixed(1)}%;background:${colorFn(k)}"></i></span></div>`).join("");
 }
 function renderSummary(){
   const [a,b] = rangeFor("sum"); const A = parse(a), B = parse(b);
@@ -913,18 +922,18 @@ function renderSummary(){
     people.map(u => `<button type="button" class="pchip" data-person="${esc(u)}" aria-pressed="${S.sumPerson===u}">${avatar(u,"sm")}${esc(nameOf(u))}</button>`).join("");
   const all = between(a,b);
   const list = S.sumPerson==="team" ? all : all.filter(e=>e.uid===S.sumPerson);
-  const hrs = list.reduce((s,e)=>s+1,0);
+  const hrs = list.reduce((s,e)=>s+(+e.hours||0),0);
   const wd = workingDays(a,b);
   const daysLogged = new Set(list.map(e=>e.date)).size;
   const active = new Set(list.map(e=>e.uid)).size;
   const blocked = list.filter(e=>e.status==="blocked").length;
-  const projH = {}; list.forEach(e => projH[e.project||"Untitled"] = (projH[e.project||"Untitled"]||0) + 1);
+  const projH = {}; list.forEach(e => projH[e.project||"Untitled"] = (projH[e.project||"Untitled"]||0) + (+e.hours||0));
   const top = Object.entries(projH).sort((x,y)=>y[1]-x[1])[0];
   const team = S.sumPerson==="team";
   $("#kpis").innerHTML = [
-    ["Updates logged", `${list.length}`, team ? `${active} of ${Math.max(active,people.length)} people active` : `${daysLogged ? fmtH(list.length/daysLogged) : 0} per logged day`],
+    ["Hours logged", `${fmtH(hrs)}<small> h</small>`, team ? `${active} of ${Math.max(active,people.length)} people active` : `${daysLogged ? fmtH(hrs/daysLogged) : 0} h per logged day`],
     [team ? "Updates" : "Days logged", team ? `${list.length}` : `${daysLogged}<small> / ${wd}</small>`, team ? `${daysLogged} days with activity` : (wd ? `${Math.round(daysLogged/wd*100)}% of working days so far` : "Period hasn't started")],
-    ["Main project", top ? `<span style="font-size:.62em">${esc(top[0].length>22?top[0].slice(0,21)+"…":top[0])}</span>` : "–", top ? `${top[1]} ${top[1]===1?"update":"updates"} · ${Math.round(top[1]/(hrs||1)*100)}% of updates` : "No entries yet"],
+    ["Main project", top ? `<span style="font-size:.62em">${esc(top[0].length>22?top[0].slice(0,21)+"…":top[0])}</span>` : "–", top ? `${fmtH(top[1])} h · ${Math.round(top[1]/(hrs||1)*100)}% of time` : "No entries yet"],
     ["Blocked", `${blocked}`, blocked ? "updates flagged as blocked" : "nothing blocked"],
   ].map(([l,v,s]) => `<div class="card kpi"><p class="eyebrow">${l}</p><div class="v">${v}</div><div class="s">${s}</div></div>`).join("");
 
@@ -932,63 +941,63 @@ function renderSummary(){
   const days = []; for (let d=A; ymd(d)<=b; d=addDays(d,1)) days.push(ymd(d));
   const stackKey = e => team ? e.uid : (e.project||"Untitled");
   const stackColor = k => team ? colorOf(k) : catVar(k);
-  const byDay = {}; list.forEach(e => { const m = (byDay[e.date] ||= {}); m[stackKey(e)] = (m[stackKey(e)]||0) + 1; });
+  const byDay = {}; list.forEach(e => { const m = (byDay[e.date] ||= {}); m[stackKey(e)] = (m[stackKey(e)]||0) + (+e.hours||0); });
   const totals = days.map(d => Object.values(byDay[d]||{}).reduce((s,v)=>s+v,0));
-  const rawMax = Math.max(4, ...totals); const step = rawMax <= 8 ? 2 : rawMax <= 16 ? 4 : rawMax <= 40 ? 10 : 20; const max = Math.ceil(rawMax/step)*step;
+  const rawMax = Math.max(9, ...totals); const step = rawMax <= 12 ? 4 : rawMax <= 24 ? 8 : rawMax <= 48 ? 12 : 24; const max = Math.ceil(rawMax/step)*step;
   $("#chart-sub").textContent = team ? "stacked by person" : "stacked by project";
   let grid = ""; let yl = "";
   for (let v=0; v<=max; v+=step){ const pct = (1 - v/max) * 100; const top = `calc(${pct}% * (100% - 20px) / 100%)`;
-    yl += `<span style="top:calc((100% - 20px) * ${(1-v/max).toFixed(4)})">${v}</span>`;
+    yl += `<span style="top:calc((100% - 20px) * ${(1-v/max).toFixed(4)})">${v}h</span>`;
     if (v>0) grid += `<span class="grid" style="top:calc((100% - 20px) * ${(1-v/max).toFixed(4)})"></span>`; }
   $("#yax").innerHTML = yl;
   const many = days.length > 10;
   $("#bars").innerHTML = grid + days.map((d,i) => {
     const m = byDay[d]||{}; const t = totals[i]; const dd = parse(d);
-    const segs = Object.entries(m).map(([k,v]) => `<i style="flex:${v};background:${stackColor(k)}" title="${esc(team?nameOf(k):k)}: ${v} ${v===1?"update":"updates"}"></i>`).join("");
+    const segs = Object.entries(m).map(([k,v]) => `<i style="flex:${v};background:${stackColor(k)}" title="${esc(team?nameOf(k):k)}: ${fmtH(v)} h"></i>`).join("");
     const lbl = many ? ((dd.getDate()===1 || dd.getDate()%5===0) ? dd.getDate() : "") : `${DOW[(dd.getDay()+6)%7]} ${dd.getDate()}`;
-    return `<div class="bcol${d===todayStr?" is-today":""}" title="${esc(fmtLong(d))}: ${t} ${t===1?"update":"updates"}">${t && !many ? `<span class="bv">${fmtH(t)}</span>` : ""}<div class="bstack" style="height:calc((100% - ${t&&!many?14:0}px) * ${(t/max).toFixed(4)})">${segs}</div><span class="bl">${lbl}</span></div>`;
+    return `<div class="bcol${d===todayStr?" is-today":""}" title="${esc(fmtLong(d))}: ${fmtH(t)} h">${t && !many ? `<span class="bv">${fmtH(t)}</span>` : ""}<div class="bstack" style="height:calc((100% - ${t&&!many?14:0}px) * ${(t/max).toFixed(4)})">${segs}</div><span class="bl">${lbl}</span></div>`;
   }).join("");
 
   $("#by-project").innerHTML = hbars(projH, catVar);
   renderProgress(list);
-  const stH = {}; list.forEach(e => { stagesOf(e).forEach(st => stH[st] = (stH[st]||0) + 1); });
+  const stH = {}; list.forEach(e => { const ss = stagesOf(e), h = (+e.hours||0) / ss.length; ss.forEach(st => stH[st] = (stH[st]||0) + h); });
   $("#by-stage").innerHTML = hbars(stH, k => `var(--c${(STAGES.indexOf(k)%6+6)%6+1})`);
   $("#bp-sub").textContent = `${Object.keys(projH).length} projects`; $("#bs-sub").textContent = `${Object.keys(stH).length} stages`;
 
   if (team){
     $("#detail-title").innerHTML = `Each person <span>select a row to open their report</span>`;
-    const rows = people.map(u => { const l = all.filter(e=>e.uid===u); const h = l.reduce((s,e)=>s+1,0);
-      const pj = {}; l.forEach(e => pj[e.project] = (pj[e.project]||0) + 1); const tp = Object.entries(pj).sort((x,y)=>y[1]-x[1])[0];
+    const rows = people.map(u => { const l = all.filter(e=>e.uid===u); const h = l.reduce((s,e)=>s+(+e.hours||0),0);
+      const pj = {}; l.forEach(e => pj[e.project] = (pj[e.project]||0) + (+e.hours||0)); const tp = Object.entries(pj).sort((x,y)=>y[1]-x[1])[0];
       const last = l.map(e=>e.date).sort().pop(); return {u,h,n:l.length,d:new Set(l.map(e=>e.date)).size,tp,last,bl:l.filter(e=>e.status==="blocked").length}; })
-      .sort((x,y)=>y.n-x.n);
-    $("#detail").innerHTML = rows.length ? `<div class="tbl-wrap"><table class="team"><thead><tr><th>Person</th><th class="num">Days logged</th><th class="num">Updates</th><th>Main project</th><th>Last update</th></tr></thead><tbody>${rows.map(r => `<tr data-person="${esc(r.u)}" tabindex="0"><td><div class="pcell">${avatar(r.u)}<div>${esc(nameOf(r.u))}<small>${esc(roleOf(r.u))}</small></div></div></td><td class="num">${r.d} / ${wd}<span class="meter"><i style="width:${wd?Math.min(100,r.d/wd*100):0}%"></i></span></td><td class="num">${r.n}${r.bl?` <span class="pill st-blocked">${r.bl} blocked</span>`:""}</td><td>${r.tp?esc(r.tp[0]):"–"}</td><td class="mono" style="font-size:13px">${r.last?esc(fmtShort(parse(r.last))):"–"}</td></tr>`).join("")}</tbody></table></div>`
+      .sort((x,y)=>y.h-x.h);
+    $("#detail").innerHTML = rows.length ? `<div class="tbl-wrap"><table class="team"><thead><tr><th>Person</th><th class="num">Hours</th><th class="num">Days logged</th><th class="num">Updates</th><th>Main project</th><th>Last update</th></tr></thead><tbody>${rows.map(r => `<tr data-person="${esc(r.u)}" tabindex="0"><td><div class="pcell">${avatar(r.u)}<div>${esc(nameOf(r.u))}<small>${esc(roleOf(r.u))}</small></div></div></td><td class="num">${fmtH(r.h)}</td><td class="num">${r.d} / ${wd}<span class="meter"><i style="width:${wd?Math.min(100,r.d/wd*100):0}%"></i></span></td><td class="num">${r.n}${r.bl?` <span class="pill st-blocked">${r.bl} blocked</span>`:""}</td><td>${r.tp?esc(r.tp[0]):"–"}</td><td class="mono" style="font-size:13px">${r.last?esc(fmtShort(parse(r.last))):"–"}</td></tr>`).join("")}</tbody></table></div>`
       : `<div class="empty">No one has logged yet. The first update saved appears here, with a row for each person.</div>`;
   } else {
     $("#detail-title").innerHTML = `${esc(nameOf(S.sumPerson))}'s updates <span>${list.length} in this period</span>`;
     const byD = {}; list.forEach(e => (byD[e.date] ||= []).push(e));
     const ds = Object.keys(byD).sort().reverse();
-    $("#detail").innerHTML = ds.length ? `<div class="timeline">${ds.map(d => `<div class="tl-day"><h5>${esc(fmtLong(d))} · ${byD[d].length} ${byD[d].length===1?"update":"updates"}</h5><div class="entries">${byD[d].map(e=>entryCard(e,false)).join("")}</div></div>`).join("")}</div>`
+    $("#detail").innerHTML = ds.length ? `<div class="timeline">${ds.map(d => `<div class="tl-day"><h5>${esc(fmtLong(d))} · ${fmtH(byD[d].reduce((s,e)=>s+(+e.hours||0),0))} h</h5><div class="entries">${byD[d].map(e=>entryCard(e,false)).join("")}</div></div>`).join("")}</div>`
       : `<div class="empty">No updates from ${esc(nameOf(S.sumPerson))} in this period.</div>`;
   }
 }
 
 function renderProgress(list){
   const P = {};
-  list.forEach(e => { const p = e.project || "Untitled", u = e.unit || "General", h = 1;
+  list.forEach(e => { const p = e.project || "Untitled", u = e.unit || "General", h = +e.hours || 0;
     const pr = (P[p] ||= { h:0, units:{} }); pr.h += h;
     const o = (pr.units[u] ||= { h:0, st:{}, last:null, people:new Set() }); o.h += h;
-    stagesOf(e).forEach(sg => o.st[sg] = (o.st[sg] || 0) + 1); o.people.add(e.uid);
+    const ss = stagesOf(e); ss.forEach(sg => o.st[sg] = (o.st[sg] || 0) + h / ss.length); o.people.add(e.uid);
     if (!o.last || e.date > o.last.date || (e.date === o.last.date && (e.updatedAt||"") > (o.last.updatedAt||""))) o.last = e; });
   const ps = Object.entries(P).sort((a,b) => b[1].h - a[1].h);
   $("#pg-sub").textContent = ps.length ? `${ps.length} projects · ${ps.reduce((t,[,v])=>t+Object.keys(v.units).length,0)} villas / units` : "";
   if (!ps.length){ $("#progress").innerHTML = `<div class="empty">Nothing logged in this period.</div>`; return; }
   $("#progress").innerHTML = ps.map(([p,v]) => {
     const us = Object.entries(v.units).sort((a,b) => a[0].localeCompare(b[0], undefined, { numeric:true }));
-    return `<div class="proj-block"><div class="proj-head"><i style="width:10px;height:10px;border-radius:2px;background:${catVar(p)}"></i>${esc(p)}<span class="mono">${v.h} ${v.h===1?"update":"updates"} · ${us.length} ${us.length===1?"unit":"units"}</span></div>
+    return `<div class="proj-block"><div class="proj-head"><i style="width:10px;height:10px;border-radius:2px;background:${catVar(p)}"></i>${esc(p)}<span class="mono">${fmtH(v.h)} h · ${us.length} ${us.length===1?"unit":"units"}</span></div>
       <div class="tbl-wrap"><table class="prog"><thead><tr><th>Unit</th><th>Current stage</th><th>Work done</th><th>Status</th><th>Last update</th><th>Who</th></tr></thead><tbody>${us.map(([u,o]) => {
         const curS = o.last ? stagesOf(o.last) : [], cur = curS.join(", "), ci = Math.max(...curS.map(x => PIPE.indexOf(x)), -1);
-        const pipe = PIPE.map((s,i) => `<i class="${curS.includes(s)?"cur":o.st[s]?"on":""}" title="${esc(s)}${o.st[s]?": "+o.st[s]:""}"></i>`).join("");
-        const tags = Object.entries(o.st).sort((a,b)=>b[1]-a[1]).map(([s,h]) => `<span class="tag">${esc(s)} · ${h}</span>`).join("");
+        const pipe = PIPE.map((s,i) => `<i class="${curS.includes(s)?"cur":o.st[s]?"on":""}" title="${esc(s)}${o.st[s]?": "+fmtH(o.st[s])+" h":""}"></i>`).join("");
+        const tags = Object.entries(o.st).sort((a,b)=>b[1]-a[1]).map(([s,h]) => `<span class="tag">${esc(s)} · ${fmtH(h)} h</span>`).join("");
         const stt = o.last && o.last.status || "progress";
         return `<tr><td><b>${esc(u)}</b></td><td>${esc(cur)}</td><td><div class="tags">${tags}</div></td><td><span class="pill st-${esc(stt)}">${esc(STATUS_LBL[stt]||"In progress")}</span></td><td class="mono">${o.last ? esc(fmtShort(parse(o.last.date))) : ""}</td><td>${[...o.people].map(x=>avatar(x,"sm")).join("")}</td></tr>`; }).join("")}</tbody></table></div></div>`;
   }).join("");
@@ -1000,8 +1009,8 @@ function updateHeroLive(){
   if (!S.ready){ t.textContent = "Connecting to the studio diary…"; return; }
   const today = between(todayStr,todayStr); const [a,b] = rangeFor("now"); const wk = between(a,b);
   const ppl = new Set(today.map(e=>e.uid)).size;
-  t.textContent = `Live · today ${ppl} ${ppl===1?"person has":"people have"} logged · ${wk.length} ${wk.length===1?"update":"updates"} this week`;
-  $("#end-stats").textContent = wk.length ? `This week the studio has logged ${wk.length} updates across ${new Set(wk.map(e=>e.project)).size} projects.` : "No updates yet this week. Be the first to log one.";
+  t.textContent = `Live · today ${ppl} ${ppl===1?"person has":"people have"} logged · ${fmtH(wk.reduce((s,e)=>s+(+e.hours||0),0))} h this week`;
+  $("#end-stats").textContent = wk.length ? `This week the studio has logged ${wk.length} updates and ${fmtH(wk.reduce((s,e)=>s+(+e.hours||0),0))} hours across ${new Set(wk.map(e=>e.project)).size} projects.` : "No updates yet this week. Be the first to log one.";
 }
 
 /* ---------------- form ---------------- */
@@ -1023,7 +1032,7 @@ function startEdit(id){
   const e = allEntries().find(x=>x.id===id); if (!e) return;
   S.editingId = id;
   const fs = $("#f-for"); if (fs){ const rid = e.uid === S.me ? "" : rosterIdOf(e.uid) || ""; if ([...fs.options].some(o => o.value === rid)) fs.value = rid; }
-  $("#f-date").value = e.date; $("#f-next").value = e.next || "";
+  $("#f-date").value = e.date; $("#f-hours").value = e.hours; $("#f-next").value = e.next || "";
   { const sel = $("#f-project"); if (e.project && ![...sel.options].some(o => o.value === e.project)) sel.add(new Option(e.project, e.project)); sel.value = e.project || ""; } $("#f-unit").value = e.unit || ""; $("#f-note").value = e.note || "";
   S.formStages = stagesOf(e).filter(x => x !== "Other"); renderParsed();
   const ss = document.getElementById("ss-"+e.status); if (ss) ss.checked = true;
@@ -1031,7 +1040,7 @@ function startEdit(id){
   $("#entry-form").scrollIntoView({behavior: reduce?"auto":"smooth", block:"start"});
   $("#f-note").focus({preventScroll:true});
 }
-function cancelEdit(){ S.editingId = null; S.formStages = []; $("#f-unit").value = ""; renderParsed(); $("#f-note").value = ""; $("#f-next").value = ""; $("#f-date").value = S.selDate; $("#f-err").textContent = ""; updateFormTitle(); }
+function cancelEdit(){ S.editingId = null; S.formStages = []; $("#f-unit").value = ""; $("#f-hours").value = 9; renderParsed(); $("#f-note").value = ""; $("#f-next").value = ""; $("#f-date").value = S.selDate; $("#f-err").textContent = ""; updateFormTitle(); }
 function disableForm(msg){
   [...$("#entry-form").elements].forEach(el => el.disabled = true);
   $("#f-err").textContent = msg;
@@ -1040,7 +1049,8 @@ async function saveEntry(ev){
   ev.preventDefault();
   const err = $("#f-err"); err.textContent = "";
   if (!S.db || !S.me){ err.textContent = "Sign in with your work email to save updates."; return; }
-  const date = $("#f-date").value, lines = parsedLines();
+  const date = $("#f-date").value, lines = parsedLines(), lineHours = splitHours(lines);
+  const hours = lineHours.reduce((t,h)=>t+h,0);
   const status = (document.querySelector('input[name=status]:checked')||{}).value || "progress";
   const needName = !(S.people[S.me] && S.people[S.me].name);
   let name = $("#f-name").value.trim(), role = $("#f-role").value.trim(), rosterId = null;
@@ -1055,12 +1065,12 @@ async function saveEntry(ev){
   if (!lines.length || !lines[0].project){ err.textContent = "Choose the project."; $("#f-project").focus(); return; }
   if (!lines[0].stages.length){ err.textContent = "Pick at least one work stage."; return; }
   if (lines[0].line.length < 3){ err.textContent = "Describe what you worked on."; $("#f-note").focus(); return; }
-
+  if (!(hours > 0 && hours <= 16)){ err.textContent = "Total hours should be between 0.5 and 16."; return; }
   const btn = $("#f-submit"); btn.disabled = true;
   const now = new Date().toISOString();
   const forId = $("#for-wrap").hidden ? "" : $("#f-for").value;
   const base = { uid: forId ? uidForRoster(forId) : S.me, by:S.me, date, status, next:$("#f-next").value.trim(), updatedAt:now };
-  const rows = lines.map((p,i) => Object.assign({}, base, { project:p.project, unit:p.unit, stage:p.stages.join(", "), stages:p.stages, note:p.line }));
+  const rows = lines.map((p,i) => Object.assign({}, base, { project:p.project, unit:p.unit, stage:p.stages.join(", "), stages:p.stages, hours:lineHours[i], note:p.line }));
   try {
     if (needName) await S.db.doc("people/"+S.me).set({ name, role, rosterId, updatedAt:now });
     let i0 = 0;
@@ -1071,7 +1081,7 @@ async function saveEntry(ev){
     }
     for (let i = i0; i < rows.length; i++){ rows[i].createdAt = now; await S.db.collection("entries").add(rows[i]); }
     toast(S.editingId ? "Update saved" : date === todayStr ? (rows.length > 1 ? `${rows.length} updates saved. Nice work.` : "Today's update is in. Nice work.") : `Saved for ${fmtShort(parse(date))}`);
-    S.editingId = null; S.formStages = []; $("#f-unit").value = ""; $("#f-note").value = ""; $("#f-next").value = ""; renderParsed();
+    S.editingId = null; S.formStages = []; $("#f-unit").value = ""; $("#f-hours").value = 9; $("#f-note").value = ""; $("#f-next").value = ""; renderParsed();
     S.selDate = date; const d = parse(date);
     if (d.getMonth() !== S.calMonth.getMonth() || d.getFullYear() !== S.calMonth.getFullYear()){ S.calMonth = new Date(d.getFullYear(), d.getMonth(), 1); ensureSubs(); }
     updateFormTitle(); schedule();
@@ -1094,8 +1104,8 @@ async function downloadCsv(){
   let list = between(a,b); if (S.sumPerson !== "team") list = list.filter(e=>e.uid===S.sumPerson);
   list.sort((x,y) => x.date.localeCompare(y.date) || nameOf(x.uid).localeCompare(nameOf(y.uid)));
   const q = v => `"${String(v??"").replace(/"/g,'""')}"`;
-  const rows = [["Date","Person","Role","Project","Unit","Stage","Status","Update","Next / blockers"]]
-    .concat(list.map(e => [e.date, nameOf(e.uid), roleOf(e.uid), e.project, e.unit||"", e.stage, STATUS_LBL[e.status]||e.status, e.note, e.next||""]));
+  const rows = [["Date","Person","Role","Project","Unit","Stage","Hours","Status","Update","Next / blockers"]]
+    .concat(list.map(e => [e.date, nameOf(e.uid), roleOf(e.uid), e.project, e.unit||"", e.stage, e.hours, STATUS_LBL[e.status]||e.status, e.note, e.next||""]));
   const who = S.sumPerson === "team" ? "studio" : nameOf(S.sumPerson).replace(/\s+/g,"-").toLowerCase();
   try { await S.dl.save({ filename:`site-diary-${who}-${a}-to-${b}.csv`, data: rows.map(r=>r.map(q).join(",")).join("\r\n") }); toast("CSV saved"); }
   catch(e){ if (e && e.code !== "declined") toast("Download isn't available here."); }
@@ -1110,6 +1120,8 @@ function wire(){
   buildChips();
   $("#f-date").value = todayStr; updateFormTitle();
   $("#f-date").addEventListener("change", updateFormTitle);
+  $("#h-minus").onclick = () => { const i = $("#f-hours"); i.value = Math.max(0.5, (+i.value||0) - 0.5); };
+  $("#h-plus").onclick = () => { const i = $("#f-hours"); i.value = Math.min(16, (+i.value||0) + 0.5); };
   $("#entry-form").addEventListener("submit", saveEntry);
   S.stageOv = {};
   S.formStages = [];
