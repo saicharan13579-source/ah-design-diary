@@ -233,6 +233,10 @@ textarea{resize:vertical;min-height:84px}
 .chip span:hover{border-color:var(--ink-2)}
 .chip input:checked + span{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .chip input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
+.dayfill{display:flex;flex-direction:column;justify-content:center;gap:6px;min-height:42px;font-size:12.5px;color:var(--ink-2)}
+.dayfill .bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.dayfill .bar i{display:block;height:100%;width:0;background:var(--accent,#D2601A);transition:width .2s}
+.dayfill.full .bar i{background:#2E7D4F}.dayfill.over .bar i{background:#B42318}.dayfill.over{color:#B42318}
 .stepper{display:flex;align-items:stretch;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--paper)}
 .stepper button{border:0;background:transparent;width:38px;cursor:pointer;font-size:18px}
 .stepper button:hover{background:var(--paper-2)}
@@ -549,13 +553,23 @@ table.team tbody tr:hover{background:var(--paper-2)}
         </div>
         <div class="row2">
           <div class="field"><label for="f-date">Date</label><input type="date" id="f-date" required></div>
-          <div class="field"><span class="lbl" id="hrs-lbl">Hours</span>
+          <div class="field"><span class="lbl" id="day-lbl">Working hours that day</span>
+            <div class="stepper" role="group" aria-labelledby="day-lbl">
+              <button type="button" id="d-minus" aria-label="Half an hour less in the working day">−</button>
+              <input type="number" id="f-day" min="0.5" max="16" step="0.5" value="9" aria-labelledby="day-lbl">
+              <button type="button" id="d-plus" aria-label="Half an hour more in the working day">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field"><span class="lbl" id="hrs-lbl">Hours on this update</span>
             <div class="stepper" role="group" aria-labelledby="hrs-lbl">
               <button type="button" id="h-minus" aria-label="Half an hour less">−</button>
               <input type="number" id="f-hours" min="0.5" max="16" step="0.5" value="9" aria-labelledby="hrs-lbl">
               <button type="button" id="h-plus" aria-label="Half an hour more">+</button>
             </div>
           </div>
+          <div class="field"><span class="lbl">Day so far</span><div class="dayfill" id="f-dayinfo" aria-live="polite"><div class="bar"><i id="f-daybar"></i></div><span id="f-daytxt">0 of 9 h</span></div></div>
         </div>
         <div class="row2">
           <div class="field"><label for="f-project">Project</label><select id="f-project"><option value="">Choose project…</option></select></div>
@@ -899,6 +913,7 @@ function splitHours(ps){
   return ps.map(p => p.hours != null ? p.hours : each);
 }
 function renderParsed(){
+  try { updateDayInfo(); } catch(e){}
   const box = $("#f-stage"); if (!box) return; const cur = S.formStages || [];
   const html = `<button type="button" class="all" data-st="*" aria-pressed="${STAGES.every(x => cur.includes(x))}">All</button>` + STAGES.map(st => `<button type="button" data-st="${esc(st)}" aria-pressed="${cur.includes(st)}">${esc(st)}</button>`).join("");
   if (box.dataset.sig !== html){ box.dataset.sig = html; box.innerHTML = html; }
@@ -1018,6 +1033,23 @@ function buildChips(){
   $("#f-status").innerHTML = STATUS.map(([v,l],i) => `<label class="chip"><input type="radio" name="status" id="ss-${v}" value="${v}"${v==="progress"?" checked":""}><span>${l}</span></label>`).join("");
   $("#cal-dow").innerHTML = DOW.map(d => `<div class="dow">${d}</div>`).join("");
 }
+function targetUid(){ const fw = $("#for-wrap"), fv = fw && !fw.hidden ? $("#f-for").value : ""; return fv ? uidForRoster(fv) : S.me; }
+function dayEntries(uid, date){ return allEntries().filter(e => e && e.uid === uid && e.date === date && e.id !== S.editingId); }
+function updateDayInfo(){
+  const date = $("#f-date").value || todayStr, uid = targetUid(); if (!$("#f-day")) return;
+  const list = uid ? dayEntries(uid, date) : [];
+  const key = uid + "|" + date;
+  if (S.dayKey !== key){ S.dayKey = key; S.dayTouched = false; S.hoursTouched = false;
+    const set = list.map(e => +e.dayHours).filter(x => x > 0).pop(); $("#f-day").value = set || 9; }
+  const total = +$("#f-day").value || 9, used = list.reduce((t,e) => t + (+e.hours || 0), 0);
+  const left = Math.max(0, Math.round((total - used) * 2) / 2);
+  if (!S.editingId && !S.hoursTouched) $("#f-hours").value = left || 0.5;
+  const mine = +$("#f-hours").value || 0, after = used + mine;
+  const box = $("#f-dayinfo"); box.classList.toggle("over", after > total + 1e-9); box.classList.toggle("full", Math.abs(after - total) < 1e-9);
+  $("#f-daybar").style.width = Math.min(100, after / total * 100).toFixed(1) + "%";
+  $("#f-daytxt").textContent = after > total + 1e-9 ? `${fmtH(after)} of ${fmtH(total)} h: ${fmtH(after - total)} h over. Raise the working hours if you worked extra.`
+    : `${fmtH(after)} of ${fmtH(total)} h with this update${used ? ` (${fmtH(used)} h already logged)` : ""}${total - after > 1e-9 ? ` · ${fmtH(total - after)} h left` : " · day complete"}`;
+}
 function setFormDate(ds){ if (!S.editingId) $("#f-date").value = ds; updateFormTitle(); }
 function updateFormTitle(){
   const ds = $("#f-date").value || todayStr;
@@ -1032,7 +1064,7 @@ function startEdit(id){
   const e = allEntries().find(x=>x.id===id); if (!e) return;
   S.editingId = id;
   const fs = $("#f-for"); if (fs){ const rid = e.uid === S.me ? "" : rosterIdOf(e.uid) || ""; if ([...fs.options].some(o => o.value === rid)) fs.value = rid; }
-  $("#f-date").value = e.date; $("#f-hours").value = e.hours; $("#f-next").value = e.next || "";
+  $("#f-date").value = e.date; $("#f-hours").value = e.hours; S.dayKey = (e.uid) + "|" + e.date; $("#f-day").value = +e.dayHours || 9; $("#f-next").value = e.next || "";
   { const sel = $("#f-project"); if (e.project && ![...sel.options].some(o => o.value === e.project)) sel.add(new Option(e.project, e.project)); sel.value = e.project || ""; } $("#f-unit").value = e.unit || ""; $("#f-note").value = e.note || "";
   S.formStages = stagesOf(e).filter(x => x !== "Other"); renderParsed();
   const ss = document.getElementById("ss-"+e.status); if (ss) ss.checked = true;
@@ -1040,7 +1072,7 @@ function startEdit(id){
   $("#entry-form").scrollIntoView({behavior: reduce?"auto":"smooth", block:"start"});
   $("#f-note").focus({preventScroll:true});
 }
-function cancelEdit(){ S.editingId = null; S.formStages = []; $("#f-unit").value = ""; $("#f-hours").value = 9; renderParsed(); $("#f-note").value = ""; $("#f-next").value = ""; $("#f-date").value = S.selDate; $("#f-err").textContent = ""; updateFormTitle(); }
+function cancelEdit(){ S.editingId = null; S.formStages = []; $("#f-unit").value = ""; S.dayKey = null; S.hoursTouched = false; renderParsed(); $("#f-note").value = ""; $("#f-next").value = ""; $("#f-date").value = S.selDate; $("#f-err").textContent = ""; updateFormTitle(); }
 function disableForm(msg){
   [...$("#entry-form").elements].forEach(el => el.disabled = true);
   $("#f-err").textContent = msg;
@@ -1065,11 +1097,13 @@ async function saveEntry(ev){
   if (!lines.length || !lines[0].project){ err.textContent = "Choose the project."; $("#f-project").focus(); return; }
   if (!lines[0].stages.length){ err.textContent = "Pick at least one work stage."; return; }
   if (lines[0].line.length < 3){ err.textContent = "Describe what you worked on."; $("#f-note").focus(); return; }
-  if (!(hours > 0 && hours <= 16)){ err.textContent = "Total hours should be between 0.5 and 16."; return; }
+  if (!(hours > 0 && hours <= 16)){ err.textContent = "Hours should be between 0.5 and 16."; return; }
+  const dayTotal = +$("#f-day").value || 9, usedDay = dayEntries(targetUid(), date).reduce((t,e) => t + (+e.hours || 0), 0);
+  if (usedDay + hours > dayTotal + 1e-9){ err.textContent = `That makes ${fmtH(usedDay + hours)} h for the day, more than the ${fmtH(dayTotal)} working hours. Lower this update's hours, or raise the working hours if you worked extra.`; return; }
   const btn = $("#f-submit"); btn.disabled = true;
   const now = new Date().toISOString();
   const forId = $("#for-wrap").hidden ? "" : $("#f-for").value;
-  const base = { uid: forId ? uidForRoster(forId) : S.me, by:S.me, date, status, next:$("#f-next").value.trim(), updatedAt:now };
+  const base = { uid: forId ? uidForRoster(forId) : S.me, by:S.me, date, status, dayHours: +$("#f-day").value || 9, next:$("#f-next").value.trim(), updatedAt:now };
   const rows = lines.map((p,i) => Object.assign({}, base, { project:p.project, unit:p.unit, stage:p.stages.join(", "), stages:p.stages, hours:lineHours[i], note:p.line }));
   try {
     if (needName) await S.db.doc("people/"+S.me).set({ name, role, rosterId, updatedAt:now });
@@ -1081,7 +1115,7 @@ async function saveEntry(ev){
     }
     for (let i = i0; i < rows.length; i++){ rows[i].createdAt = now; await S.db.collection("entries").add(rows[i]); }
     toast(S.editingId ? "Update saved" : date === todayStr ? (rows.length > 1 ? `${rows.length} updates saved. Nice work.` : "Today's update is in. Nice work.") : `Saved for ${fmtShort(parse(date))}`);
-    S.editingId = null; S.formStages = []; $("#f-unit").value = ""; $("#f-hours").value = 9; $("#f-note").value = ""; $("#f-next").value = ""; renderParsed();
+    S.editingId = null; S.formStages = []; $("#f-unit").value = ""; S.dayKey = null; S.hoursTouched = false; $("#f-note").value = ""; $("#f-next").value = ""; renderParsed();
     S.selDate = date; const d = parse(date);
     if (d.getMonth() !== S.calMonth.getMonth() || d.getFullYear() !== S.calMonth.getFullYear()){ S.calMonth = new Date(d.getFullYear(), d.getMonth(), 1); ensureSubs(); }
     updateFormTitle(); schedule();
@@ -1120,8 +1154,14 @@ function wire(){
   buildChips();
   $("#f-date").value = todayStr; updateFormTitle();
   $("#f-date").addEventListener("change", updateFormTitle);
-  $("#h-minus").onclick = () => { const i = $("#f-hours"); i.value = Math.max(0.5, (+i.value||0) - 0.5); };
-  $("#h-plus").onclick = () => { const i = $("#f-hours"); i.value = Math.min(16, (+i.value||0) + 0.5); };
+  $("#h-minus").onclick = () => { const i = $("#f-hours"); i.value = Math.max(0.5, (+i.value||0) - 0.5); S.hoursTouched = true; updateDayInfo(); };
+  $("#h-plus").onclick = () => { const i = $("#f-hours"); i.value = Math.min(16, (+i.value||0) + 0.5); S.hoursTouched = true; updateDayInfo(); };
+  $("#d-minus").onclick = () => { const i = $("#f-day"); i.value = Math.max(0.5, (+i.value||0) - 0.5); updateDayInfo(); };
+  $("#d-plus").onclick = () => { const i = $("#f-day"); i.value = Math.min(16, (+i.value||0) + 0.5); updateDayInfo(); };
+  $("#f-hours").addEventListener("input", () => { S.hoursTouched = true; updateDayInfo(); });
+  $("#f-day").addEventListener("input", updateDayInfo);
+  $("#f-date").addEventListener("change", updateDayInfo);
+  $("#f-for").addEventListener("change", updateDayInfo);
   $("#entry-form").addEventListener("submit", saveEntry);
   S.stageOv = {};
   S.formStages = [];
