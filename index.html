@@ -603,6 +603,7 @@ table.team tbody tr:hover{background:var(--paper-2)}
             <span class="lbl" id="p-label">–</span>
             <button class="icon-btn" id="p-next" type="button" aria-label="Next period">›</button>
           </div>
+          <button class="btn small" id="xlsx" type="button" hidden>Download Excel</button>
           <button class="btn ghost small" id="csv" type="button" hidden>Download CSV</button>
           <button class="btn ghost small" id="manage-team" type="button" hidden>Team list</button>
         </div>
@@ -1170,6 +1171,65 @@ async function downloadCsv(){
   catch(e){ if (e && e.code !== "declined") toast("Download isn't available here."); }
 }
 
+/* ---------------- excel: one workbook per week / month ---------------- */
+let xlsxP = null;
+function loadXlsx(){
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  return xlsxP ||= new Promise((ok, no) => { const sc = document.createElement("script");
+    sc.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    sc.onload = () => ok(window.XLSX); sc.onerror = () => { xlsxP = null; no(new Error("load")); }; document.head.appendChild(sc); });
+}
+async function downloadExcel(){
+  const btn = $("#xlsx"); btn.disabled = true; const label = btn.textContent; btn.textContent = "Preparing…";
+  try {
+    const X = await loadXlsx();
+    const [a,b] = rangeFor("sum"), A = parse(a), B = parse(b);
+    const period = S.sumMode === "week" ? `Week ${fmtShort(A)} – ${fmtShort(B)} ${B.getFullYear()}` : `${MON[A.getMonth()]} ${A.getFullYear()}`;
+    const list = between(a,b).sort((x,y) => x.date.localeCompare(y.date) || nameOf(x.uid).localeCompare(nameOf(y.uid)));
+    const nU = n => `${n} ${n===1?"update":"updates"}`, nD = n => `${n} ${n===1?"day":"days"}`, H = e => +e.hours || 0, sum = l => Math.round(l.reduce((t,e) => t + H(e), 0) * 100) / 100;
+    const dmy = d => { const [y,m,dd] = d.split("-"); return `${dd}-${m}-${y}`; };
+    const row = e => [dmy(e.date), DOW[(parse(e.date).getDay()+6)%7], nameOf(e.uid), e.project || "", e.unit || "", stagesOf(e).join(", "), H(e), STATUS_LBL[e.status] || e.status || "", e.note || "", e.next || "", e.by && e.by !== e.uid ? nameOf(e.by) : ""];
+    const HEAD = ["Date","Day","Person","Project","Villa / unit","Work stage","Hours","Status","What was done","Next / blockers","Logged by"];
+    const COLS = [11,5,26,14,16,26,7,11,70,36,20].map(w => ({ wch:w }));
+    const wb = X.utils.book_new(), used = new Set();
+    const sheetName = n => { let t = String(n).replace(/[\[\]:*?\/\\]/g, " ").trim().slice(0,31) || "Sheet", k = t, i = 2; while (used.has(k.toLowerCase())) k = t.slice(0, 28) + " " + i++; used.add(k.toLowerCase()); return k; };
+    const add = (name, aoa, cols) => { const ws = X.utils.aoa_to_sheet(aoa); if (cols) ws["!cols"] = cols; X.utils.book_append_sheet(wb, ws, sheetName(name)); };
+    const people = knownPeople().filter(u => list.some(e => e.uid === u) || !u.startsWith("r:")).sort((x,y) => nameOf(x).localeCompare(nameOf(y)));
+    const projects = [...new Set(list.map(e => e.project || "Untitled"))].sort((x,y) => sum(list.filter(e=>(e.project||"Untitled")===y)) - sum(list.filter(e=>(e.project||"Untitled")===x)));
+    const top = (l, key) => { const m = {}; l.forEach(e => m[key(e)] = (m[key(e)]||0) + H(e)); const t = Object.entries(m).sort((p,q) => q[1]-p[1])[0]; return t ? t[0] : ""; };
+    /* overview */
+    const ov = [["AH Head Office Design Team Diary"], [period + " summary"], [`Downloaded ${fmtLong(todayStr)}`], [],
+      ["BY PERSON"], ["Person","Role","Updates","Hours","Days logged","Main project","Projects worked on"]];
+    people.forEach(u => { const l = list.filter(e => e.uid === u);
+      ov.push([nameOf(u), (roleOf(u)||"").replace(/ · not signed in yet$/,""), l.length, sum(l), new Set(l.map(e=>e.date)).size, top(l, e => e.project||"Untitled"), [...new Set(l.map(e=>e.project).filter(Boolean))].join(", ")]); });
+    ov.push(["Whole team","", list.length, sum(list), new Set(list.map(e=>e.date)).size, top(list, e => e.project||"Untitled"), ""], [], ["BY PROJECT"], ["Project","Updates","Hours","Villas / units","People","Work stages"]);
+    projects.forEach(p => { const l = list.filter(e => (e.project||"Untitled") === p);
+      ov.push([p, l.length, sum(l), [...new Set(l.flatMap(e => String(e.unit||"").split(/\s*,\s*/)).filter(Boolean))].join(", "), [...new Set(l.map(e => nameOf(e.uid)))].join(", "), [...new Set(l.flatMap(stagesOf))].join(", ")]); });
+    const stH = {}; list.forEach(e => { const ss = stagesOf(e); ss.forEach(st => { (stH[st] ||= [0,0]); stH[st][0]++; stH[st][1] += H(e) / ss.length; }); });
+    ov.push([], ["BY WORK STAGE"], ["Work stage","Updates","Hours (shared)"]);
+    Object.entries(stH).sort((p,q) => q[1][1]-p[1][1]).forEach(([k,v]) => ov.push([k, v[0], Math.round(v[1]*100)/100]));
+    add("Overview", ov, [{wch:30},{wch:34},{wch:10},{wch:10},{wch:12},{wch:16},{wch:40}]);
+    add("All updates", [HEAD, ...list.map(row)], COLS);
+    /* one sheet per person */
+    people.forEach(u => { const l = list.filter(e => e.uid === u); if (!l.length) return;
+      const byDay = {}; l.forEach(e => (byDay[e.date] ||= []).push(e));
+      const aoa = [[nameOf(u)], [(roleOf(u)||"").replace(/ · not signed in yet$/,"")], [period + ` · ${nU(l.length)} · ${sum(l)} h · ${nD(Object.keys(byDay).length)}`], [], HEAD];
+      Object.keys(byDay).sort().forEach(d => { byDay[d].forEach(e => aoa.push(row(e))); const day = byDay[d].map(e => +e.dayHours).filter(x => x > 0).pop() || 9;
+        aoa.push(["", "", `Day total ${dmy(d)}`, "", "", "", sum(byDay[d]), `of ${day} h`, "", "", ""]); });
+      add(nameOf(u), aoa, COLS); });
+    /* one sheet per project */
+    projects.forEach(p => { const l = list.filter(e => (e.project||"Untitled") === p);
+      const aoa = [[p], [period + ` · ${nU(l.length)} · ${sum(l)} h`], [], ["Person","Updates","Hours"]];
+      [...new Set(l.map(e => e.uid))].forEach(u => { const m = l.filter(e => e.uid === u); aoa.push([nameOf(u), m.length, sum(m)]); });
+      aoa.push([], HEAD, ...l.map(row));
+      add("Project " + p, aoa, COLS); });
+    const tag = S.sumMode === "week" ? `week-${a}` : `${MON[A.getMonth()]}-${A.getFullYear()}`;
+    X.writeFile(wb, `AH-Design-Diary-${tag}.xlsx`);
+    toast("Excel file downloaded");
+  } catch(e){ toast("Couldn't make the Excel file. Check your connection and try again."); }
+  finally { btn.disabled = false; btn.textContent = label; }
+}
+
 /* ---------------- misc ui ---------------- */
 let tt = 0;
 function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(tt); tt = setTimeout(()=>t.classList.remove("on"), 2600); }
@@ -1222,6 +1282,7 @@ function wire(){
   const shift = dir => { const a = parse(S.sumAnchor); S.sumAnchor = ymd(S.sumMode==="week" ? addDays(a, 7*dir) : new Date(a.getFullYear(), a.getMonth()+dir, 1)); ensureSubs(); schedule(); };
   $("#p-prev").onclick = () => shift(-1); $("#p-next").onclick = () => shift(1);
   $("#csv").onclick = downloadCsv;
+  $("#xlsx").onclick = downloadExcel;
   $("#me-chip").onclick = () => { $("#s-name").value = nameOf(S.me) === "You" ? "" : nameOf(S.me); $("#s-role").value = roleOf(S.me); $("#sheet").hidden = false; $("#s-name").focus(); };
   $("#s-cancel").onclick = () => { $("#sheet").hidden = true; };
   $("#f-who").addEventListener("change", () => { $("#name-row").hidden = $("#f-who").value !== "other"; renderFor(); updateFormTitle(); });
@@ -1257,6 +1318,7 @@ async function init(){
   const [db, user, dl] = await Promise.all([c.use("db"), c.use("user"), c.use("downloads")]);
   S.db = db; S.user = user; S.dl = dl;
   if (dl) $("#csv").hidden = false;
+  $("#xlsx").hidden = false;
   if (user){
     try { S.me = await user.id(); const cw = await user.can("data.write"); if (cw === false) S.canWrite = false; S.canAdmin = await user.canEdit(); S.isOwner = await user.isOwner(); S.logAll = user.canLogAll ? await user.canLogAll() : false; } catch(e){}
   }
