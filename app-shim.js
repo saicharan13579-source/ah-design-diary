@@ -9,7 +9,7 @@
   const viaLink = /type=(magiclink|recovery|signup)/.test(location.hash);
   const POLL_MS = 12000;
   /* view-only link: ?view=<key> — no sign-in, read only */
-  const VIEW = (new URLSearchParams(location.search).get("view") || (location.hash.match(/view=([A-Za-z0-9_-]+)/) || [])[1] || "").trim() || null;
+  const VIEW = (new URLSearchParams(location.search).get("v") || new URLSearchParams(location.search).get("view") || (location.hash.match(/view=([A-Za-z0-9_-]+)/) || [])[1] || "").trim() || null;
   window.AH_VIEW = !!VIEW;
   const configured = !!(CFG.supabaseUrl && CFG.supabaseAnonKey && !/YOUR-/.test(CFG.supabaseUrl + CFG.supabaseAnonKey));
   const sb = configured && window.supabase ? window.supabase.createClient(CFG.proxyUrl || CFG.supabaseUrl, CFG.supabaseAnonKey, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storageKey:"sb-" + (CFG.supabaseUrl.match(/\/\/([^.]+)/)||[,"ah"])[1] + "-auth-token" } }) : null;
