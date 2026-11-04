@@ -174,6 +174,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 @keyframes rise{from{transform:translateY(6px);opacity:.4}}
 .entry .meta{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px}
 .entry .who{font-weight:600}
+.entry .item{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
+.entry .item:first-of-type{margin-top:8px}
+.entry .item .meta{margin-top:0}
 .entry .note{margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
 .entry .next{margin:6px 0 0;font-size:13px;color:var(--ink-2);overflow-wrap:anywhere}
 .entry .acts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;font-size:13px}
@@ -822,12 +825,34 @@ function entryCard(e, showDate){
   </div></article>`;
 }
 
+function personCards(list){
+  const order = [], by = {};
+  list.forEach(e => { if (!by[e.uid]){ by[e.uid] = []; order.push(e.uid); } by[e.uid].push(e); });
+  return order.map(uid => {
+    const es = by[uid], hrs = es.reduce((t,e) => t + (+e.hours||0), 0);
+    const day = es.map(e => +e.dayHours).filter(x => x > 0).pop() || 9;
+    const loggers = [...new Set(es.filter(e => e.by && e.by !== uid).map(e => nameOf(e.by)))];
+    const items = es.map(e => {
+      const mine = (S.logAll || e.uid === S.me || (e.by && e.by === S.me)) && S.canWrite !== false, confirm = S.confirmDel === e.id;
+      return `<div class="item"><div class="meta"><span class="tag"><i class="sw" style="background:${catVar(e.project)}"></i>${esc(e.project)}</span>${e.unit?`<span class="tag">${esc(e.unit)}</span>`:""}${stagesOf(e).map(st => `<span class="tag">${esc(st)}</span>`).join("")}
+          <span class="pill st-${esc(e.status||"progress")}">${esc(STATUS_LBL[e.status]||"In progress")}</span><span class="mono" style="margin-left:auto">${fmtH(+e.hours||0)} h</span></div>
+        <p class="note">${esc(e.note)}</p>${e.next?`<p class="next">Next: ${esc(e.next)}</p>`:""}
+        ${mine?`<div class="acts">${confirm?`<span>Delete this update?</span><button type="button" class="link-btn danger" data-del-yes="${esc(e.id)}">Delete</button><button type="button" class="link-btn" data-del-no="1">Keep</button>`:`<button type="button" class="link-btn" data-edit="${esc(e.id)}">Edit</button><button type="button" class="link-btn" data-del="${esc(e.id)}">Delete</button>`}</div>`:""}</div>`;
+    }).join("");
+    return `<article class="entry">${avatar(uid,"lg")}<div style="min-width:0">
+      <div class="meta"><span class="who">${esc(nameOf(uid))}</span>${roleOf(uid)?`<span style="color:var(--ink-2)">${esc(roleOf(uid))}</span>`:""}
+        ${loggers.length?`<span style="color:var(--ink-2);font-size:12px">logged by ${esc(loggers.join(", "))}</span>`:""}
+        <span class="mono" style="margin-left:auto" title="${es.length} ${es.length===1?"update":"updates"}">${fmtH(hrs)} of ${fmtH(day)} h</span></div>
+      ${items}</div></article>`;
+  }).join("");
+}
+
 function renderDay(){
   const list = between(S.selDate, S.selDate).sort((a,b) => nameOf(a.uid).localeCompare(nameOf(b.uid)) || (a.createdAt||"").localeCompare(b.createdAt||""));
   $("#dl-title").textContent = (S.selDate === todayStr ? "Today, " : "") + fmtLong(S.selDate);
   const hrs = list.reduce((s,e)=>s+(+e.hours||0),0);
   $("#dl-hours").textContent = list.length ? `${list.length} update${list.length>1?"s":""} · ${fmtH(hrs)} h` : "";
-  $("#dl-entries").innerHTML = list.length ? list.map(e => entryCard(e,false)).join("")
+  $("#dl-entries").innerHTML = list.length ? personCards(list)
     : `<div class="empty">${!S.db ? "Updates appear here once the diary connects." : S.selDate > todayStr ? "This day hasn't happened yet." : "No updates logged for this day. Use the form to add one."}</div>`;
   const logged = new Set(list.map(e=>e.uid));
   const isSun = parse(S.selDate).getDay() === 0;
@@ -991,7 +1016,7 @@ function renderSummary(){
     $("#detail-title").innerHTML = `${esc(nameOf(S.sumPerson))}'s updates <span>${list.length} in this period</span>`;
     const byD = {}; list.forEach(e => (byD[e.date] ||= []).push(e));
     const ds = Object.keys(byD).sort().reverse();
-    $("#detail").innerHTML = ds.length ? `<div class="timeline">${ds.map(d => `<div class="tl-day"><h5>${esc(fmtLong(d))} · ${fmtH(byD[d].reduce((s,e)=>s+(+e.hours||0),0))} h</h5><div class="entries">${byD[d].map(e=>entryCard(e,false)).join("")}</div></div>`).join("")}</div>`
+    $("#detail").innerHTML = ds.length ? `<div class="timeline">${ds.map(d => `<div class="tl-day"><h5>${esc(fmtLong(d))} · ${fmtH(byD[d].reduce((s,e)=>s+(+e.hours||0),0))} h</h5><div class="entries">${personCards(byD[d])}</div></div>`).join("")}</div>`
       : `<div class="empty">No updates from ${esc(nameOf(S.sumPerson))} in this period.</div>`;
   }
 }
