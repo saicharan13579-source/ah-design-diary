@@ -127,6 +127,14 @@ button,input,select,textarea{font:inherit;color:inherit}
 /* app */
 .app{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:56px 80px;background:var(--paper);position:relative;border-top:1px solid var(--line)}
 .wrap{max-width:1240px;margin:0 auto;display:grid;gap:28px}
+.wrap > *, .board > *, .breaks > *, .kpis > *{min-width:0}
+@media (min-width:1600px){.wrap{max-width:1440px}}
+html, body{overflow-x:clip}
+@media (max-width:980px){.nav{display:none}.me-chip{margin-left:auto}}
+.me-chip{max-width:min(240px, 46vw);overflow:hidden}
+.me-chip > *:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+@media (max-width:700px){ table.team{min-width:0 !important} }
+@media (min-width:2200px){.wrap{max-width:1680px}}
 .sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .sec-head h2{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(30px,3.6vw,46px);line-height:1;margin:6px 0 0;letter-spacing:.01em}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px}
@@ -209,6 +217,25 @@ table.prog th{font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;text
 table.prog td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
 table.prog tr:last-child td{border-bottom:0}
 table.prog .tags{display:flex;flex-wrap:wrap;gap:4px}
+table.prog .tag{white-space:normal}
+@media (max-width:700px){
+  .tbl-wrap{overflow:visible}
+  table.prog, table.team{min-width:0;table-layout:auto}
+  table.prog thead, table.team thead{display:none}
+  table.prog, table.prog tbody, table.prog tr, table.prog td,
+  table.team, table.team tbody{display:block;width:auto}
+  table.prog tr{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;padding:12px 0;border-bottom:1px solid var(--line)}
+  table.prog tr:last-child{border-bottom:0}
+  table.prog td{border:0;padding:0}
+  table.prog td.u, table.prog td[data-l="Work done"], table.prog td[data-l="Current stage"]{grid-column:1 / -1}
+  table.team tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 12px;padding:12px 4px;border-bottom:1px solid var(--line)}
+  table.team td{border:0;padding:0;text-align:left!important}
+  table.team td:first-child{grid-column:1 / -1}
+  table.team td.num .meter{display:block;margin:4px 0 0}
+  table.prog td[data-l]::before, table.team td[data-l]::before{content:attr(data-l);display:block;font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);margin-bottom:2px}
+  .proj-head{flex-wrap:wrap}
+  .sum-controls{width:100%}
+}
 .pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.06em}
 .st-done{color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
 .st-progress{color:var(--info);background:color-mix(in srgb,var(--info) 14%,transparent)}
@@ -256,7 +283,7 @@ textarea{resize:vertical;min-height:84px}
 .seg button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
 .period{display:flex;align-items:center;gap:8px}
 .period .lbl{font-family:var(--f-mono);font-size:13px;min-width:170px;text-align:center}
-.people-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.people-row{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:4px}
 .pchip{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:3px 12px 3px 3px;cursor:pointer;white-space:nowrap;font-size:14px;flex:none}
 .pchip.team{padding-left:12px}
 .pchip[aria-pressed=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
@@ -1011,7 +1038,7 @@ function renderSummary(){
       const pj = {}; l.forEach(e => pj[e.project] = (pj[e.project]||0) + (+e.hours||0)); const tp = Object.entries(pj).sort((x,y)=>y[1]-x[1])[0];
       const last = l.map(e=>e.date).sort().pop(); return {u,h,n:l.length,d:new Set(l.map(e=>e.date)).size,tp,last,bl:l.filter(e=>e.status==="blocked").length}; })
       .sort((x,y)=>y.h-x.h);
-    $("#detail").innerHTML = rows.length ? `<div class="tbl-wrap"><table class="team"><thead><tr><th>Person</th><th class="num">Hours</th><th class="num">Days logged</th><th class="num">Updates</th><th>Main project</th><th>Last update</th></tr></thead><tbody>${rows.map(r => `<tr data-person="${esc(r.u)}" tabindex="0"><td><div class="pcell">${avatar(r.u)}<div>${esc(nameOf(r.u))}<small>${esc(roleOf(r.u))}</small></div></div></td><td class="num">${fmtH(r.h)}</td><td class="num">${r.d} / ${wd}<span class="meter"><i style="width:${wd?Math.min(100,r.d/wd*100):0}%"></i></span></td><td class="num">${r.n}${r.bl?` <span class="pill st-blocked">${r.bl} blocked</span>`:""}</td><td>${r.tp?esc(r.tp[0]):"–"}</td><td class="mono" style="font-size:13px">${r.last?esc(fmtShort(parse(r.last))):"–"}</td></tr>`).join("")}</tbody></table></div>`
+    $("#detail").innerHTML = rows.length ? `<div class="tbl-wrap"><table class="team"><thead><tr><th>Person</th><th class="num">Hours</th><th class="num">Days logged</th><th class="num">Updates</th><th>Main project</th><th>Last update</th></tr></thead><tbody>${rows.map(r => `<tr data-person="${esc(r.u)}" tabindex="0"><td><div class="pcell">${avatar(r.u)}<div>${esc(nameOf(r.u))}<small>${esc(roleOf(r.u))}</small></div></div></td><td class="num" data-l="Hours">${fmtH(r.h)}</td><td class="num" data-l="Days logged">${r.d} / ${wd}<span class="meter"><i style="width:${wd?Math.min(100,r.d/wd*100):0}%"></i></span></td><td class="num" data-l="Updates">${r.n}${r.bl?` <span class="pill st-blocked">${r.bl} blocked</span>`:""}</td><td data-l="Main project">${r.tp?esc(r.tp[0]):"–"}</td><td class="mono" data-l="Last update" style="font-size:13px">${r.last?esc(fmtShort(parse(r.last))):"–"}</td></tr>`).join("")}</tbody></table></div>`
       : `<div class="empty">No one has logged yet. The first update saved appears here, with a row for each person.</div>`;
   } else {
     $("#detail-title").innerHTML = `${esc(nameOf(S.sumPerson))}'s updates <span>${list.length} in this period</span>`;
@@ -1040,7 +1067,7 @@ function renderProgress(list){
         const pipe = PIPE.map((s,i) => `<i class="${curS.includes(s)?"cur":o.st[s]?"on":""}" title="${esc(s)}${o.st[s]?": "+fmtH(o.st[s])+" h":""}"></i>`).join("");
         const tags = Object.entries(o.st).sort((a,b)=>b[1]-a[1]).map(([s,h]) => `<span class="tag">${esc(s)} · ${fmtH(h)} h</span>`).join("");
         const stt = o.last && o.last.status || "progress";
-        return `<tr><td><b>${esc(u)}</b></td><td>${esc(cur)}</td><td><div class="tags">${tags}</div></td><td><span class="pill st-${esc(stt)}">${esc(STATUS_LBL[stt]||"In progress")}</span></td><td class="mono">${o.last ? esc(fmtShort(parse(o.last.date))) : ""}</td><td>${[...o.people].map(x=>avatar(x,"sm")).join("")}</td></tr>`; }).join("")}</tbody></table></div></div>`;
+        return `<tr><td class="u"><b>${esc(u)}</b></td><td data-l="Current stage">${esc(cur)}</td><td data-l="Work done"><div class="tags">${tags}</div></td><td data-l="Status"><span class="pill st-${esc(stt)}">${esc(STATUS_LBL[stt]||"In progress")}</span></td><td class="mono" data-l="Last update">${o.last ? esc(fmtShort(parse(o.last.date))) : ""}</td><td data-l="Who">${[...o.people].map(x=>avatar(x,"sm")).join("")}</td></tr>`; }).join("")}</tbody></table></div></div>`;
   }).join("");
 }
 
@@ -1193,9 +1220,13 @@ async function downloadExcel(){
     const COLS = [11,5,26,14,16,26,7,11,70,36,20].map(w => ({ wch:w }));
     const wb = X.utils.book_new(), used = new Set();
     const sheetName = n => { let t = String(n).replace(/[\[\]:*?\/\\]/g, " ").trim().slice(0,31) || "Sheet", k = t, i = 2; while (used.has(k.toLowerCase())) k = t.slice(0, 28) + " " + i++; used.add(k.toLowerCase()); return k; };
-    const add = (name, aoa, cols) => { const ws = X.utils.aoa_to_sheet(aoa); if (cols) ws["!cols"] = cols; X.utils.book_append_sheet(wb, ws, sheetName(name)); };
+    const add = (name, aoa, cols) => { const ws = X.utils.aoa_to_sheet(aoa); if (cols) ws["!cols"] = cols;
+      const hr = aoa.findIndex(r => r[0] === HEAD[0] && r[1] === HEAD[1]);
+      if (hr >= 0) ws["!autofilter"] = { ref: X.utils.encode_range({ s:{ r:hr, c:0 }, e:{ r:aoa.length - 1, c:HEAD.length - 1 } }) };
+      X.utils.book_append_sheet(wb, ws, sheetName(name)); };
     const people = knownPeople().filter(u => list.some(e => e.uid === u) || !u.startsWith("r:")).sort((x,y) => nameOf(x).localeCompare(nameOf(y)));
-    const projects = [...new Set(list.map(e => e.project || "Untitled"))].sort((x,y) => sum(list.filter(e=>(e.project||"Untitled")===y)) - sum(list.filter(e=>(e.project||"Untitled")===x)));
+    const order = [...projectList(), GENERAL], rank = p => { const i = order.indexOf(p); return i < 0 ? 999 : i; };
+    const projects = [...new Set(list.map(e => e.project || "Untitled"))].sort((x,y) => rank(x) - rank(y) || x.localeCompare(y));
     const top = (l, key) => { const m = {}; l.forEach(e => m[key(e)] = (m[key(e)]||0) + H(e)); const t = Object.entries(m).sort((p,q) => q[1]-p[1])[0]; return t ? t[0] : ""; };
     /* overview */
     const ov = [["AH Head Office Design Team Diary"], [period + " summary"], [`Downloaded ${fmtLong(todayStr)}`], [],
@@ -1209,7 +1240,6 @@ async function downloadExcel(){
     ov.push([], ["BY WORK STAGE"], ["Work stage","Updates","Hours (shared)"]);
     Object.entries(stH).sort((p,q) => q[1][1]-p[1][1]).forEach(([k,v]) => ov.push([k, v[0], Math.round(v[1]*100)/100]));
     add("Overview", ov, [{wch:30},{wch:34},{wch:10},{wch:10},{wch:12},{wch:16},{wch:40}]);
-    add("All updates", [HEAD, ...list.map(row)], COLS);
     /* one sheet per person */
     people.forEach(u => { const l = list.filter(e => e.uid === u); if (!l.length) return;
       const byDay = {}; l.forEach(e => (byDay[e.date] ||= []).push(e));
@@ -1223,6 +1253,7 @@ async function downloadExcel(){
       [...new Set(l.map(e => e.uid))].forEach(u => { const m = l.filter(e => e.uid === u); aoa.push([nameOf(u), m.length, sum(m)]); });
       aoa.push([], HEAD, ...l.map(row));
       add("Project " + p, aoa, COLS); });
+    add("All updates", [HEAD, ...list.map(row)], COLS);
     const tag = S.sumMode === "week" ? `week-${a}` : `${MON[A.getMonth()]}-${A.getFullYear()}`;
     X.writeFile(wb, `AH-Design-Diary-${tag}.xlsx`);
     toast("Excel file downloaded");
