@@ -8,6 +8,9 @@
   const CFG = window.AH_CONFIG || {};
   const viaLink = /type=(magiclink|recovery|signup)/.test(location.hash);
   const POLL_MS = 12000;
+  /* view-only link: ?view=<key> — no sign-in, read only */
+  const VIEW = (new URLSearchParams(location.search).get("view") || (location.hash.match(/view=([A-Za-z0-9_-]+)/) || [])[1] || "").trim() || null;
+  window.AH_VIEW = !!VIEW;
   const configured = !!(CFG.supabaseUrl && CFG.supabaseAnonKey && !/YOUR-/.test(CFG.supabaseUrl + CFG.supabaseAnonKey));
   const sb = configured && window.supabase ? window.supabase.createClient(CFG.proxyUrl || CFG.supabaseUrl, CFG.supabaseAnonKey, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storageKey:"sb-" + (CFG.supabaseUrl.match(/\/\/([^.]+)/)||[,"ah"])[1] + "-auth-token" } }) : null;
   const meta = { fromCache:false, hasPendingWrites:false };
@@ -117,8 +120,13 @@
       m.textContent = "Saved. You're signed in."; setTimeout(() => g.remove(), 900);
     });
   }
+  async function vget(col, from, to){
+    const { data, error } = await sb.rpc("viewer_docs", { t: VIEW, c: col, d_from: from || null, d_to: to || null });
+    if (error) throw mapErr(error);
+    return data || [];
+  }
   function ensureSession(){
-    if (!sb) return Promise.resolve(null);
+    if (!sb || VIEW) return Promise.resolve(null);
     if (!sessionP) sessionP = sb.auth.getSession().then(({ data }) => data.session || gate()).then(s => { session = s; if (viaLink && s) setPassword(); return s; });
     return sessionP;
   }
@@ -151,6 +159,7 @@
 
   /* ---------- db ---------- */
   async function upsert(col, id, data){
+    if (VIEW) throw E("invalid_argument", "This is a view-only link.");
     await ensureSession();
     if (col === "entries" && email() !== ownerEmail){ data = Object.assign({}, data, { by: uid() }); if (!data.uid) data.uid = uid(); }
     const { error } = await sb.from("docs").upsert({ col, id, data, date: typeof data.date === "string" ? data.date : "", updated_at: new Date().toISOString() });
@@ -163,6 +172,7 @@
       id, path,
       async get(){
         if (path === "env/hyderabad") return snapDoc(id, await weather().catch(() => null));
+        if (VIEW){ const r = (await vget(col)).find(x => x.id === id); return snapDoc(id, r && r.data); }
         await ensureSession();
         const { data, error } = await sb.from("docs").select("data").eq("col", col).eq("id", id).maybeSingle();
         if (error) throw mapErr(error);
@@ -170,7 +180,7 @@
       },
       set: data => upsert(col, id, data),
       async update(data){ const cur = await ref.get(); if (!cur.exists) throw E("invalid_argument","Missing document"); return upsert(col, id, Object.assign({}, cur.data(), data)); },
-      async delete(){ await ensureSession(); const { error } = await sb.from("docs").delete().eq("col", col).eq("id", id); if (error) throw mapErr(error); refreshAll(); },
+      async delete(){ if (VIEW) throw E("invalid_argument", "This is a view-only link."); await ensureSession(); const { error } = await sb.from("docs").delete().eq("col", col).eq("id", id); if (error) throw mapErr(error); refreshAll(); },
       onSnapshot(next, onErr){
         let last = "";
         return addListener({ run: async () => {
@@ -192,6 +202,11 @@
       doc: id => docRef(col + "/" + (id || (Date.now().toString(36) + Math.random().toString(36).slice(2,10)))),
       async add(data){ const r = q.doc(); await r.set(data); return r; },
       async get(){
+        if (VIEW){
+          let from = null, to = null; filters.forEach(([f,op,v]) => { if (f === "date"){ if (op === ">=") from = v; if (op === "<=") to = v; } });
+          const rows = (await vget(col, from, to)).slice(0, lim || 2000);
+          return snapQuery(rows.filter(r => filters.every(([f,op,v]) => { const x = r.data && r.data[f]; return op === ">=" ? x >= v : op === "<=" ? x <= v : op === "==" ? x === v : true; })));
+        }
         await ensureSession();
         let req = sb.from("docs").select("id,data").eq("col", col);
         filters.forEach(([f,op,v]) => { if (f === "date"){ if (op === ">=") req = req.gte("date", v); if (op === "<=") req = req.lte("date", v); } });
@@ -219,9 +234,9 @@
     async id(){ await ensureSession(); return uid(); },
     async isOwner(){ await ensureSession(); return !!ownerEmail && email() === ownerEmail; },
     async canEdit(){ return user.isOwner(); },
-    async canLogAll(){ await ensureSession(); if (!sb || !email()) return false;
+    async canLogAll(){ if (VIEW) return false; await ensureSession(); if (!sb || !email()) return false;
       try { const { data } = await sb.from("team_access").select("is_owner,can_log_all").eq("email", email()).maybeSingle(); return !!(data && (data.is_owner || data.can_log_all)); } catch(e){ return false; } },
-    async can(name){ await ensureSession(); return name === "data.write" ? !!uid() : false; },
+    async can(name){ if (VIEW) return false; await ensureSession(); return name === "data.write" ? !!uid() : false; },
     async me(){ await ensureSession(); const o = await user.isOwner(); return { id: uid(), name: email().split("@")[0], email: email() || null, avatarUrl:"", color: colorFor(uid()), isOwner:o, canEdit:o }; },
     async name(){ return (await user.me()).name; },
     async email(){ await ensureSession(); return email() || null; },

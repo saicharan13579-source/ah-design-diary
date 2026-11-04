@@ -142,3 +142,21 @@ create policy "team deletes own" on public.docs for delete to authenticated usin
   )
 );
 
+
+-- View-only link (?view=<key>): read entries, people and team list without signing in.
+create table if not exists public.viewer_keys (key text primary key, created_at timestamptz not null default now());
+alter table public.viewer_keys enable row level security;   -- no policies: keys are never readable through the API
+insert into public.viewer_keys (key) select md5(random()::text || clock_timestamp()::text) || md5(random()::text)
+  where not exists (select 1 from public.viewer_keys);
+create or replace function public.viewer_docs(t text, c text, d_from text default null, d_to text default null)
+returns table (id text, data jsonb, date text)
+language sql stable security definer set search_path = public as $$
+  select d.id, d.data, d.date from docs d
+  where exists (select 1 from viewer_keys k where k.key = t)
+    and c in ('entries','people','team') and d.col = c
+    and (d_from is null or d.date >= d_from) and (d_to is null or d.date <= d_to)
+$$;
+revoke all on function public.viewer_docs(text,text,text,text) from public;
+grant execute on function public.viewer_docs(text,text,text,text) to anon, authenticated;
+-- To see the key:      select key from public.viewer_keys;
+-- To change the key:   update public.viewer_keys set key = md5(random()::text) || md5(random()::text);

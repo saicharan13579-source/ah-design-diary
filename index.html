@@ -8,7 +8,7 @@
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js?v=20261027"></script>
-<script src="app-shim.js?v=20261027"></script>
+<script src="app-shim.js?v=20261104"></script>
 </head>
 <body>
 <title>AH Head Office Design Team Diary</title>
@@ -130,6 +130,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 .wrap > *, .board > *, .breaks > *, .kpis > *{min-width:0}
 @media (min-width:1600px){.wrap{max-width:1440px}}
 html, body{overflow-x:clip}
+.view-badge{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;font-size:12.5px;font-weight:600;letter-spacing:.02em;background:var(--ink,#0F1728);color:var(--paper,#fff);margin-left:auto;white-space:nowrap}
+.viewer #entry-form, .viewer .acts, .viewer #manage-team, .viewer #me-chip{display:none !important}
+.viewer .board{grid-template-columns:1fr}
+.entry .copy-btn{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--field,#fff);color:inherit;border-radius:999px;padding:3px 10px;cursor:pointer}
+.entry .copy-btn:hover{border-color:var(--ink-2)}
 @media (max-width:980px){.nav{display:none}.me-chip{margin-left:auto}}
 .me-chip{max-width:min(240px, 46vw);overflow:hidden}
 .me-chip > *:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
@@ -880,6 +885,8 @@ function personCards(list){
     const es = by[uid], hrs = es.reduce((t,e) => t + (+e.hours||0), 0);
     const day = es.map(e => +e.dayHours).filter(x => x > 0).pop() || 9;
     const loggers = [...new Set(es.filter(e => e.by && e.by !== uid).map(e => nameOf(e.by)))];
+    const ck = uid + "|" + (es[0] && es[0].date);
+    (S.copyText ||= {})[ck] = `${nameOf(uid)} — ${fmtLong(es[0].date)} — ${fmtH(hrs)} of ${fmtH(day)} h\n\n` + es.map(e => `${e.project}${e.unit ? " · " + e.unit : ""} · ${stagesOf(e).join(", ")} · ${fmtH(+e.hours||0)} h · ${STATUS_LBL[e.status] || "In progress"}\n${e.note || ""}${e.next ? "\nNext: " + e.next : ""}`).join("\n\n");
     const items = es.map(e => {
       const mine = (S.logAll || e.uid === S.me || (e.by && e.by === S.me)) && S.canWrite !== false, confirm = S.confirmDel === e.id;
       return `<div class="item"><div class="meta"><span class="tag"><i class="sw" style="background:${catVar(e.project)}"></i>${esc(e.project)}</span>${e.unit?`<span class="tag">${esc(e.unit)}</span>`:""}${stagesOf(e).map(st => `<span class="tag">${esc(st)}</span>`).join("")}
@@ -890,7 +897,7 @@ function personCards(list){
     return `<article class="entry">${avatar(uid,"lg")}<div style="min-width:0">
       <div class="meta"><span class="who">${esc(nameOf(uid))}</span>${roleOf(uid)?`<span style="color:var(--ink-2)">${esc(roleOf(uid))}</span>`:""}
         ${loggers.length?`<span style="color:var(--ink-2);font-size:12px">logged by ${esc(loggers.join(", "))}</span>`:""}
-        <span class="mono" style="margin-left:auto" title="${es.length} ${es.length===1?"update":"updates"}">${fmtH(hrs)} of ${fmtH(day)} h</span></div>
+        <span class="mono" style="margin-left:auto" title="${es.length} ${es.length===1?"update":"updates"}">${fmtH(hrs)} of ${fmtH(day)} h</span><button type="button" class="copy-btn" data-copy="${esc(ck)}" aria-label="Copy ${esc(nameOf(uid))}'s updates">Copy</button></div>
       ${items}</div></article>`;
   }).join("");
 }
@@ -1362,7 +1369,16 @@ function wire(){
 }
 
 /* ---------------- init ---------------- */
+document.addEventListener("click", async ev => {
+  const b = ev.target.closest && ev.target.closest("[data-copy]"); if (!b) return;
+  const t = (S.copyText || {})[b.dataset.copy] || ""; if (!t) return;
+  try { await navigator.clipboard.writeText(t); }
+  catch(e){ const ta = document.createElement("textarea"); ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch(_){} ta.remove(); }
+  const old = b.textContent; b.textContent = "Copied"; setTimeout(() => b.textContent = old, 1400);
+});
 async function init(){
+  if (window.AH_VIEW){ document.body.classList.add("viewer"); S.canWrite = false;
+    const tb = document.querySelector(".topbar"); if (tb && !tb.querySelector(".view-badge")){ const v = document.createElement("span"); v.className = "view-badge"; v.textContent = "View only"; tb.appendChild(v); } }
   wire(); ensureSubs(); render(); computeEnv();
   const c = window.claude;
   if (!c || !c.use){ banner("This site is not connected to its database yet. Fill in config.js (see README)."); disableForm(""); return; }
