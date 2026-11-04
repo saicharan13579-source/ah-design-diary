@@ -613,16 +613,7 @@ table.team tbody tr:hover{background:var(--paper-2)}
             </div>
           </div>
         </div>
-        <div class="row2">
-          <div class="field"><span class="lbl" id="hrs-lbl">Hours on this update</span>
-            <div class="stepper" role="group" aria-labelledby="hrs-lbl">
-              <button type="button" id="h-minus" aria-label="Half an hour less">−</button>
-              <input type="number" id="f-hours" min="0.5" max="16" step="0.5" value="9" aria-labelledby="hrs-lbl">
-              <button type="button" id="h-plus" aria-label="Half an hour more">+</button>
-            </div>
-          </div>
-          <div class="field"><span class="lbl">Day so far</span><div class="dayfill" id="f-dayinfo" aria-live="polite"><div class="bar"><i id="f-daybar"></i></div><span id="f-daytxt">0 of 9 h</span></div></div>
-        </div>
+        <p class="who-note" id="f-daytxt" aria-live="polite" style="margin:-4px 0 12px"></p>
         <div class="row2">
           <div class="field"><label for="f-project">Project</label><select id="f-project"><option value="">Choose project…</option></select></div>
           <div class="field"><label for="f-unit">Villa / unit <span style="text-transform:none;font-weight:400">(optional)</span></label><input type="text" id="f-unit" maxlength="60" placeholder="e.g. Villa 14, E40" autocomplete="off"></div>
@@ -757,8 +748,8 @@ function allEntries(){ const m = new Map(); for (const k in S.subs) for (const [
     return Object.assign({}, e, fix); });
   /* each person's day is fitted to its working hours (9 h unless extra hours were added) */
   const G = {}; out.forEach(e => (G[e.uid + "|" + e.date] ||= []).push(e));
-  Object.values(G).forEach(l => { const day = Math.max(9, ...l.map(e => +e.dayHours || 0)), raw = l.reduce((t,e) => t + e.rawHours, 0);
-    l.forEach(e => { e.dayHours = day; e.hours = Math.round((raw > 0 ? e.rawHours / raw * day : day / l.length) * 4) / 4; });
+  Object.values(G).forEach(l => { const day = Math.max(9, ...l.map(e => +e.dayHours || 0)), n = l.length;
+    l.forEach(e => { e.dayHours = day; e.hours = Math.round(day / n * 4) / 4; });
     const diff = Math.round((day - l.reduce((t,e) => t + e.hours, 0)) * 4) / 4;
     if (diff) l.reduce((a,b) => b.hours > a.hours ? b : a).hours += diff; });
   return out; }
@@ -992,7 +983,7 @@ function parsedLines(){
 function stagesOf(e){ return Array.isArray(e.stages) && e.stages.length ? e.stages : String(e.stage || "Other").split(/\s*,\s*/).filter(Boolean);
 }
 function splitHours(ps){
-  const total = parseFloat($("#f-hours").value) || 0;
+  const total = 0;
   const fixed = ps.filter(p => p.hours != null), free = ps.length - fixed.length;
   const rem = Math.max(0, total - fixed.reduce((t,p)=>t+p.hours,0));
   const each = free ? Math.max(0.25, Math.round(rem / free * 4) / 4) : 0;
@@ -1127,15 +1118,9 @@ function updateDayInfo(){
   const key = uid + "|" + date;
   if (S.dayKey !== key){ S.dayKey = key; S.dayTouched = false; S.hoursTouched = false;
     const set = list.map(e => +e.dayHours).filter(x => x > 0).pop(); $("#f-day").value = set || 9; }
-  const total = Math.max(9, +$("#f-day").value || 9), used = list.reduce((t,e) => t + (e.rawHours != null ? e.rawHours : (+e.hours || 0)), 0);
-  const left = Math.max(0, Math.round((total - used) * 2) / 2);
-  if (!S.editingId && !S.hoursTouched) $("#f-hours").value = left || Math.max(0.5, Math.round(total / (list.length + 1) * 2) / 2);
-  const mine = +$("#f-hours").value || 0, all = used + mine, share = all > 0 ? mine / all * total : total;
-  const box = $("#f-dayinfo"); box.classList.remove("over"); box.classList.add("full");
-  $("#f-daybar").style.width = Math.min(100, share / total * 100).toFixed(1) + "%";
-  $("#f-daytxt").textContent = list.length
-    ? `This update gets ${fmtH(share)} of the day's ${fmtH(total)} h · ${list.length + 1} updates share the day`
-    : `This update gets the full ${fmtH(total)} h day${Math.abs(mine - total) > 1e-9 ? " (add more updates to share it)" : ""}`;
+  const total = Math.max(9, +$("#f-day").value || 9), n = list.length + (S.editingId ? 0 : 1);
+  $("#f-daytxt").textContent = n <= 1 ? `The ${fmtH(total)} h working day goes to this update. More updates that day share it equally.`
+    : `${n} updates that day share the ${fmtH(total)} h equally: about ${fmtH(Math.round(total / n * 4) / 4)} h each.`;
 }
 function setFormDate(ds){ if (!S.editingId) $("#f-date").value = ds; updateFormTitle(); }
 function updateFormTitle(){
@@ -1151,7 +1136,7 @@ function startEdit(id){
   const e = allEntries().find(x=>x.id===id); if (!e) return;
   S.editingId = id;
   const fs = $("#f-for"); if (fs){ const rid = e.uid === S.me ? "" : rosterIdOf(e.uid) || ""; if ([...fs.options].some(o => o.value === rid)) fs.value = rid; }
-  $("#f-date").value = e.date; $("#f-hours").value = e.rawHours != null ? e.rawHours : e.hours; S.dayKey = (e.uid) + "|" + e.date; $("#f-day").value = +e.dayHours || 9; $("#f-next").value = e.next || "";
+  $("#f-date").value = e.date; S.dayKey = (e.uid) + "|" + e.date; $("#f-day").value = +e.dayHours || 9; $("#f-next").value = e.next || "";
   { const sel = $("#f-project"); if (e.project && ![...sel.options].some(o => o.value === e.project)) sel.add(new Option(e.project, e.project)); sel.value = e.project || ""; } $("#f-unit").value = e.unit || ""; $("#f-note").value = e.note || "";
   S.formStages = stagesOf(e).filter(x => x !== "Other"); renderParsed();
   const ss = document.getElementById("ss-"+e.status); if (ss) ss.checked = true;
@@ -1168,8 +1153,7 @@ async function saveEntry(ev){
   ev.preventDefault();
   const err = $("#f-err"); err.textContent = "";
   if (!S.db || !S.me){ err.textContent = "Sign in with your work email to save updates."; return; }
-  const date = $("#f-date").value, lines = parsedLines(), lineHours = splitHours(lines);
-  const hours = lineHours.reduce((t,h)=>t+h,0);
+  const date = $("#f-date").value, lines = parsedLines();
   const status = (document.querySelector('input[name=status]:checked')||{}).value || "progress";
   const needName = !(S.people[S.me] && S.people[S.me].name);
   let name = $("#f-name").value.trim(), role = $("#f-role").value.trim(), rosterId = null;
@@ -1184,13 +1168,13 @@ async function saveEntry(ev){
   if (!lines.length || !lines[0].project){ err.textContent = "Choose the project."; $("#f-project").focus(); return; }
   if (!lines[0].stages.length){ err.textContent = "Pick at least one work stage."; return; }
   if (lines[0].line.length < 3){ err.textContent = "Describe what you worked on."; $("#f-note").focus(); return; }
-  if (!(hours > 0 && hours <= 16)){ err.textContent = "Hours should be between 0.5 and 16."; return; }
+
 
   const btn = $("#f-submit"); btn.disabled = true;
   const now = new Date().toISOString();
   const forId = $("#for-wrap").hidden ? "" : $("#f-for").value;
   const base = { uid: forId ? uidForRoster(forId) : S.me, by:S.me, date, status, dayHours: Math.max(9, +$("#f-day").value || 9), next:$("#f-next").value.trim(), updatedAt:now };
-  const rows = lines.map((p,i) => Object.assign({}, base, { project:p.project, unit:p.unit, stage:p.stages.join(", "), stages:p.stages, hours:lineHours[i], note:p.line }));
+  const rows = lines.map((p,i) => Object.assign({}, base, { project:p.project, unit:p.unit, stage:p.stages.join(", "), stages:p.stages, note:p.line }));
   try {
     if (needName) await S.db.doc("people/"+S.me).set({ name, role, rosterId, updatedAt:now });
     let i0 = 0;
@@ -1303,11 +1287,8 @@ function wire(){
   buildChips();
   $("#f-date").value = todayStr; updateFormTitle();
   $("#f-date").addEventListener("change", updateFormTitle);
-  $("#h-minus").onclick = () => { const i = $("#f-hours"); i.value = Math.max(0.5, (+i.value||0) - 0.5); S.hoursTouched = true; updateDayInfo(); };
-  $("#h-plus").onclick = () => { const i = $("#f-hours"); i.value = Math.min(16, (+i.value||0) + 0.5); S.hoursTouched = true; updateDayInfo(); };
   $("#d-minus").onclick = () => { const i = $("#f-day"); i.value = Math.max(9, (+i.value||0) - 0.5); updateDayInfo(); };
   $("#d-plus").onclick = () => { const i = $("#f-day"); i.value = Math.min(16, (+i.value||0) + 0.5); updateDayInfo(); };
-  $("#f-hours").addEventListener("input", () => { S.hoursTouched = true; updateDayInfo(); });
   $("#f-day").addEventListener("input", updateDayInfo);
   $("#f-date").addEventListener("change", updateDayInfo);
   $("#f-for").addEventListener("change", updateDayInfo);
