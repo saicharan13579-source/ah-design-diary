@@ -120,10 +120,17 @@
       m.textContent = "Saved. You're signed in."; setTimeout(() => g.remove(), 900);
     });
   }
+  const vcache = {};
   async function vget(col, from, to){
-    const { data, error } = await sb.rpc("viewer_docs", { t: VIEW, c: col, d_from: from || null, d_to: to || null });
-    if (error) throw mapErr(error);
-    return data || [];
+    const k = [col, from, to].join("|"), now = Date.now();
+    if (vcache[k] && now - vcache[k].at < 4000) return vcache[k].p;
+    const base = (CFG.proxyUrl || CFG.supabaseUrl).replace(/\/$/, "");
+    const p = fetch(base + "/rest/v1/rpc/viewer_docs", { method:"POST",
+      headers:{ apikey: CFG.supabaseAnonKey, authorization: "Bearer " + CFG.supabaseAnonKey, "content-type":"application/json" },
+      body: JSON.stringify({ t: VIEW, c: col, d_from: from || null, d_to: to || null }) })
+      .then(async r => { if (!r.ok) throw E("unavailable", "View link error " + r.status); return (await r.json()) || []; });
+    vcache[k] = { at: now, p }; p.catch(() => delete vcache[k]);
+    return p;
   }
   function ensureSession(){
     if (!sb || VIEW) return Promise.resolve(null);

@@ -8,7 +8,7 @@
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js?v=20261027"></script>
-<script src="app-shim.js?v=20261104"></script>
+<script src="app-shim.js?v=20261104b"></script>
 </head>
 <body>
 <title>AH Head Office Design Team Diary</title>
@@ -462,6 +462,10 @@ input[type=text],input[type=date],input[type=number],textarea,select{background:
 .seg{border-radius:999px;padding:3px;gap:2px}
 .seg button{border-radius:999px;transition:background .25s,color .25s}
 .seg button[aria-pressed=true]{background:var(--glass-spec);color:var(--ink);box-shadow:inset 0 1px 0 var(--glass-edge),0 3px 10px -4px rgba(0,0,0,.25)}
+.sum-bar{display:flex;align-items:center;justify-content:space-between;gap:12px 16px;flex-wrap:wrap}
+.sum-bar .people-row{flex:1 1 420px;min-width:0;padding-bottom:0}
+.sum-bar .sum-controls{flex:0 0 auto;margin-left:auto}
+@media (max-width:700px){.sum-bar .sum-controls{margin-left:0;width:100%}}
 /* summary toolbar: one tidy row, every control the same height */
 .sum-controls{gap:10px;align-items:center}
 .sum-controls > *{height:40px;box-sizing:border-box}
@@ -638,22 +642,24 @@ table.team tbody tr:hover{background:var(--paper-2)}
     <section class="wrap" id="summary" style="gap:16px">
       <div class="sec-head">
         <div><p class="eyebrow">Team reports</p><h2>Summaries</h2></div>
-        <div class="sum-controls">
-          <div class="seg" role="group" aria-label="Period">
-            <button type="button" id="m-week" aria-pressed="true">Week</button>
-            <button type="button" id="m-month" aria-pressed="false">Month</button>
-          </div>
-          <div class="period">
-            <button class="icon-btn" id="p-prev" type="button" aria-label="Previous period">‹</button>
-            <span class="lbl" id="p-label">–</span>
-            <button class="icon-btn" id="p-next" type="button" aria-label="Next period">›</button>
-          </div>
-          <button class="btn small" id="xlsx" type="button" hidden>Download Excel</button>
-          <button class="btn ghost small" id="csv" type="button" hidden>Download CSV</button>
-          <button class="btn ghost small" id="manage-team" type="button" hidden>Team list</button>
-        </div>
       </div>
-      <div class="people-row" id="people-row" role="group" aria-label="Show summary for"></div>
+      <div class="sum-bar">
+        <div class="people-row" id="people-row" role="group" aria-label="Show summary for"></div>
+          <div class="sum-controls">
+            <div class="seg" role="group" aria-label="Period">
+              <button type="button" id="m-week" aria-pressed="true">Week</button>
+              <button type="button" id="m-month" aria-pressed="false">Month</button>
+            </div>
+            <div class="period">
+              <button class="icon-btn" id="p-prev" type="button" aria-label="Previous period">‹</button>
+              <span class="lbl" id="p-label">–</span>
+              <button class="icon-btn" id="p-next" type="button" aria-label="Next period">›</button>
+            </div>
+            <button class="btn small" id="xlsx" type="button" hidden>Download Excel</button>
+            <button class="btn ghost small" id="csv" type="button" hidden>Download CSV</button>
+            <button class="btn ghost small" id="manage-team" type="button" hidden>Team list</button>
+          </div>
+      </div>
       <div class="kpis" id="kpis"></div>
       <div class="card chart-card"><h4 id="chart-title">Hours per day <span id="chart-sub"></span></h4><div class="bars-wrap"><div class="yax" id="yax"></div><div class="bars" id="bars"></div></div></div>
       <div class="breaks">
