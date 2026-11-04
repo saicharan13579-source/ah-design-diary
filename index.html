@@ -457,6 +457,17 @@ input[type=text],input[type=date],input[type=number],textarea,select{background:
 .seg{border-radius:999px;padding:3px;gap:2px}
 .seg button{border-radius:999px;transition:background .25s,color .25s}
 .seg button[aria-pressed=true]{background:var(--glass-spec);color:var(--ink);box-shadow:inset 0 1px 0 var(--glass-edge),0 3px 10px -4px rgba(0,0,0,.25)}
+/* summary toolbar: one tidy row, every control the same height */
+.sum-controls{gap:10px;align-items:center}
+.sum-controls > *{height:40px;box-sizing:border-box}
+.sum-controls .seg{display:inline-flex;align-items:stretch}
+.sum-controls .seg button{display:inline-flex;align-items:center;padding:0 16px;font-size:14px}
+.sum-controls .period{gap:6px;padding:0 4px;border:1px solid var(--line);border-radius:999px;background:var(--field)}
+.sum-controls .period .icon-btn{width:32px;height:32px;border:0;background:transparent}
+.sum-controls .period .lbl{min-width:150px;line-height:40px}
+.sum-controls .btn.small{padding:0 16px;font-size:13.5px;line-height:1}
+.sec-head{align-items:flex-end}
+@media (max-width:700px){.sum-controls > *{height:38px}.sum-controls .period{flex:1 1 100%;justify-content:space-between}.sum-controls .period .lbl{min-width:0}}
 .pchip[aria-pressed=true]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent),inset 0 1px 0 var(--glass-edge)}
 .hbar .tr,.meter,.gantt .track{background:var(--field)}
 .gantt .track{outline-color:var(--line);border-radius:999px}
