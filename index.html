@@ -585,10 +585,10 @@ table.team tbody tr:hover{background:var(--paper-2)}
         </div>
         <div class="row2">
           <div class="field"><label for="f-date">Date</label><input type="date" id="f-date" required></div>
-          <div class="field"><span class="lbl" id="day-lbl">Working hours</span>
+          <div class="field"><span class="lbl" id="day-lbl">Working hours <span style="text-transform:none;font-weight:400">(9 + extra)</span></span>
             <div class="stepper" role="group" aria-labelledby="day-lbl">
               <button type="button" id="d-minus" aria-label="Half an hour less in the working day">−</button>
-              <input type="number" id="f-day" min="0.5" max="16" step="0.5" value="9" aria-labelledby="day-lbl">
+              <input type="number" id="f-day" min="9" max="16" step="0.5" value="9" aria-labelledby="day-lbl">
               <button type="button" id="d-plus" aria-label="Half an hour more in the working day">+</button>
             </div>
           </div>
@@ -685,7 +685,7 @@ const MON = ["January","February","March","April","May","June","July","August","
 const DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 const fmtLong = s => parse(s).toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"});
 const fmtShort = d => d.toLocaleDateString("en-IN",{day:"numeric",month:"short"});
-const fmtH = h => (Math.round(h*10)/10).toString();
+const fmtH = h => (Math.round(h*100)/100).toString();
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const STAGES = ["Concept","Schematic Design","Design Development","Working Drawings","3D / Rendering","Site Visit","Client Meeting","BOQ / Estimation","Approvals","Coordination","Project Documentation"];
@@ -729,10 +729,17 @@ function ensureSub(key){
 function ensureSubs(){ ensureSub("cal"); ensureSub("sum"); ensureSub("now"); }
 function allEntries(){ const m = new Map(); for (const k in S.subs) for (const [id,e] of S.subs[k].docs) m.set(id,e);
   const claim = {}; for (const [u,pp] of Object.entries(S.people)){ const r = ridOf(pp); if (r) claim["r:" + r] = u; }
-  return [...m.values()].map(e => { if (!e) return e; const fix = {};
+  const out = [...m.values()].filter(Boolean).map(e => { const fix = { rawHours: +e.hours || 0 };
     if (claim[e.uid]) fix.uid = claim[e.uid];
     const cp = canonProject(e.project); if (cp !== e.project) fix.project = cp;
-    return Object.keys(fix).length ? Object.assign({}, e, fix) : e; }); }
+    return Object.assign({}, e, fix); });
+  /* each person's day is fitted to its working hours (9 h unless extra hours were added) */
+  const G = {}; out.forEach(e => (G[e.uid + "|" + e.date] ||= []).push(e));
+  Object.values(G).forEach(l => { const day = Math.max(9, ...l.map(e => +e.dayHours || 0)), raw = l.reduce((t,e) => t + e.rawHours, 0);
+    l.forEach(e => { e.dayHours = day; e.hours = Math.round((raw > 0 ? e.rawHours / raw * day : day / l.length) * 4) / 4; });
+    const diff = Math.round((day - l.reduce((t,e) => t + e.hours, 0)) * 4) / 4;
+    if (diff) l.reduce((a,b) => b.hours > a.hours ? b : a).hours += diff; });
+  return out; }
 const projKey = p => String(p || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
 function canonProject(p){ if (!p) return p; const k = projKey(p); const hit = [...projectList(), GENERAL].find(x => projKey(x) === k); return hit || p; }
 const normName = n => String(n || "").toLowerCase().replace(/[^a-z]+/g, " ").trim();
@@ -1096,14 +1103,15 @@ function updateDayInfo(){
   const key = uid + "|" + date;
   if (S.dayKey !== key){ S.dayKey = key; S.dayTouched = false; S.hoursTouched = false;
     const set = list.map(e => +e.dayHours).filter(x => x > 0).pop(); $("#f-day").value = set || 9; }
-  const total = +$("#f-day").value || 9, used = list.reduce((t,e) => t + (+e.hours || 0), 0);
+  const total = Math.max(9, +$("#f-day").value || 9), used = list.reduce((t,e) => t + (e.rawHours != null ? e.rawHours : (+e.hours || 0)), 0);
   const left = Math.max(0, Math.round((total - used) * 2) / 2);
-  if (!S.editingId && !S.hoursTouched) $("#f-hours").value = left || 0.5;
-  const mine = +$("#f-hours").value || 0, after = used + mine;
-  const box = $("#f-dayinfo"); box.classList.toggle("over", after > total + 1e-9); box.classList.toggle("full", Math.abs(after - total) < 1e-9);
-  $("#f-daybar").style.width = Math.min(100, after / total * 100).toFixed(1) + "%";
-  $("#f-daytxt").textContent = after > total + 1e-9 ? `${fmtH(after)} of ${fmtH(total)} h: ${fmtH(after - total)} h over. Raise the working hours if you worked extra.`
-    : `${fmtH(after)} of ${fmtH(total)} h with this update${used ? ` (${fmtH(used)} h already logged)` : ""}${total - after > 1e-9 ? ` · ${fmtH(total - after)} h left` : " · day complete"}`;
+  if (!S.editingId && !S.hoursTouched) $("#f-hours").value = left || Math.max(0.5, Math.round(total / (list.length + 1) * 2) / 2);
+  const mine = +$("#f-hours").value || 0, all = used + mine, share = all > 0 ? mine / all * total : total;
+  const box = $("#f-dayinfo"); box.classList.remove("over"); box.classList.add("full");
+  $("#f-daybar").style.width = Math.min(100, share / total * 100).toFixed(1) + "%";
+  $("#f-daytxt").textContent = list.length
+    ? `This update gets ${fmtH(share)} of the day's ${fmtH(total)} h · ${list.length + 1} updates share the day`
+    : `This update gets the full ${fmtH(total)} h day${Math.abs(mine - total) > 1e-9 ? " (add more updates to share it)" : ""}`;
 }
 function setFormDate(ds){ if (!S.editingId) $("#f-date").value = ds; updateFormTitle(); }
 function updateFormTitle(){
@@ -1119,7 +1127,7 @@ function startEdit(id){
   const e = allEntries().find(x=>x.id===id); if (!e) return;
   S.editingId = id;
   const fs = $("#f-for"); if (fs){ const rid = e.uid === S.me ? "" : rosterIdOf(e.uid) || ""; if ([...fs.options].some(o => o.value === rid)) fs.value = rid; }
-  $("#f-date").value = e.date; $("#f-hours").value = e.hours; S.dayKey = (e.uid) + "|" + e.date; $("#f-day").value = +e.dayHours || 9; $("#f-next").value = e.next || "";
+  $("#f-date").value = e.date; $("#f-hours").value = e.rawHours != null ? e.rawHours : e.hours; S.dayKey = (e.uid) + "|" + e.date; $("#f-day").value = +e.dayHours || 9; $("#f-next").value = e.next || "";
   { const sel = $("#f-project"); if (e.project && ![...sel.options].some(o => o.value === e.project)) sel.add(new Option(e.project, e.project)); sel.value = e.project || ""; } $("#f-unit").value = e.unit || ""; $("#f-note").value = e.note || "";
   S.formStages = stagesOf(e).filter(x => x !== "Other"); renderParsed();
   const ss = document.getElementById("ss-"+e.status); if (ss) ss.checked = true;
@@ -1153,12 +1161,11 @@ async function saveEntry(ev){
   if (!lines[0].stages.length){ err.textContent = "Pick at least one work stage."; return; }
   if (lines[0].line.length < 3){ err.textContent = "Describe what you worked on."; $("#f-note").focus(); return; }
   if (!(hours > 0 && hours <= 16)){ err.textContent = "Hours should be between 0.5 and 16."; return; }
-  const dayTotal = +$("#f-day").value || 9, usedDay = dayEntries(targetUid(), date).reduce((t,e) => t + (+e.hours || 0), 0);
-  if (usedDay + hours > dayTotal + 1e-9){ err.textContent = `That makes ${fmtH(usedDay + hours)} h for the day, more than the ${fmtH(dayTotal)} working hours. Lower this update's hours, or raise the working hours if you worked extra.`; return; }
+
   const btn = $("#f-submit"); btn.disabled = true;
   const now = new Date().toISOString();
   const forId = $("#for-wrap").hidden ? "" : $("#f-for").value;
-  const base = { uid: forId ? uidForRoster(forId) : S.me, by:S.me, date, status, dayHours: +$("#f-day").value || 9, next:$("#f-next").value.trim(), updatedAt:now };
+  const base = { uid: forId ? uidForRoster(forId) : S.me, by:S.me, date, status, dayHours: Math.max(9, +$("#f-day").value || 9), next:$("#f-next").value.trim(), updatedAt:now };
   const rows = lines.map((p,i) => Object.assign({}, base, { project:p.project, unit:p.unit, stage:p.stages.join(", "), stages:p.stages, hours:lineHours[i], note:p.line }));
   try {
     if (needName) await S.db.doc("people/"+S.me).set({ name, role, rosterId, updatedAt:now });
@@ -1274,7 +1281,7 @@ function wire(){
   $("#f-date").addEventListener("change", updateFormTitle);
   $("#h-minus").onclick = () => { const i = $("#f-hours"); i.value = Math.max(0.5, (+i.value||0) - 0.5); S.hoursTouched = true; updateDayInfo(); };
   $("#h-plus").onclick = () => { const i = $("#f-hours"); i.value = Math.min(16, (+i.value||0) + 0.5); S.hoursTouched = true; updateDayInfo(); };
-  $("#d-minus").onclick = () => { const i = $("#f-day"); i.value = Math.max(0.5, (+i.value||0) - 0.5); updateDayInfo(); };
+  $("#d-minus").onclick = () => { const i = $("#f-day"); i.value = Math.max(9, (+i.value||0) - 0.5); updateDayInfo(); };
   $("#d-plus").onclick = () => { const i = $("#f-day"); i.value = Math.min(16, (+i.value||0) + 0.5); updateDayInfo(); };
   $("#f-hours").addEventListener("input", () => { S.hoursTouched = true; updateDayInfo(); });
   $("#f-day").addEventListener("input", updateDayInfo);
