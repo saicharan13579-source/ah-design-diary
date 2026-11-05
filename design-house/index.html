@@ -176,6 +176,10 @@ input[type=search]{border-radius:12px;box-shadow:none}
 .wkcard li{font-size:15px;line-height:1.45;padding-left:2px}
 .wkcard li::marker{color:var(--muted);font-weight:600}
 .wkcard li span{display:block}
+.src{display:flex!important;gap:8px;align-items:center;font-size:12px;color:var(--muted);font-weight:500;margin-bottom:3px}
+.tg{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px}
+.tg-done{background:var(--accent-soft);color:var(--accent)}
+.tg-pending{background:var(--warn-soft);color:var(--warn)}
 .nxt{margin-top:5px;font-size:13px;color:var(--info);font-weight:500}
 .nxt::before{content:"Next week · ";color:var(--muted);font-weight:400}
 </style>
@@ -431,7 +435,17 @@ const WEEKS = [
       { p:"konak", name:"KONAK-2", points:[
         {t:"2 borewells drilled, 700 ft and 600 ft: one in the canal buffer area (2\" yield) and one next to the STP underground area (2\" yield)"} ]},
       { p:"iqon-west", name:"IQON WEST", points:[
-        {t:"STP and HT yard concluded in the same location: Phase-1 south-east tot-lot portion"} ]}
+        {t:"STP and HT yard concluded in the same location: Phase-1 south-east tot-lot portion"},
+        {src:"OPEN SKY VR", tag:"done", t:"Villa 8 furnished model villa (267 sq.yd / 3,425 sq.ft) captured after dark"},
+        {src:"OPEN SKY VR", tag:"pending", t:"Balcony, entrance and terrace views for Villas 15 and 19; new aerial/skywalk flight with the 10 vantage points from the Konak flight; route extension from Fatehpur Bridge to the project gate, joined to the Konak route; villa availability in the master layouts", next:"Vendor to share a dated, item-wise completion plan"} ]},
+      { p:"utf", name:"UTF · Urban Trilla Farms", points:[
+        {src:"OPEN SKY VR", tag:"done", t:"Digital twins for Villas 69, 70 (MD's villa) and 33: interiors and exteriors, day and night"},
+        {src:"OPEN SKY VR", tag:"pending", t:"Four amenity buildings and open amenities across about 3.8 acres; new aerial/skywalk flight and the 10 Konak vantage points; coverage of the 60 unsold plots; final route leg from Fatehpur Bridge to the project gate", next:"Vendor to share a dated, item-wise completion plan"} ]},
+      { p:"uta", name:"UTA · Urban Trilla Apartments", points:[
+        {src:"OPEN SKY VR", tag:"pending", t:"Nothing completed yet. Pending: day and night balcony scans for Flats A404, A503 and B701, and every balcony and sit-out of the 6 unsold flats"},
+        {src:"OPEN SKY VR", tag:"pending", t:"Master layout and landscape: lawns, courts, courtyards, amphitheatre, track, gardens and grand entrance"},
+        {src:"OPEN SKY VR", tag:"pending", t:"Clubhouse: banquet hall, gym, mini theatre, indoor games and terrace infinity pool"},
+        {src:"OPEN SKY VR", tag:"pending", t:"New aerial/skywalk flight with the 10 Konak vantage points; complete 3D model showing flat availability", next:"Vendor to share a dated, item-wise completion plan"} ]}
     ]}
 ];
 /* Running list of dated items — s: "done" | "ongoing" | "upcoming" */
@@ -488,7 +502,7 @@ function viewUpdates(){
       <div class="big" style="gap:8px 22px"><div><b>${nPts}</b> <span>updates</span></div><div><b style="color:var(--info)">${nNext}</b> <span>due next week</span></div><div><b>${W.projects.length}</b> <span>projects</span></div></div></section>
     <div class="wkgrid">${W.projects.map(x=>`<section class="wkcard">
       <div class="wkt"><a href="#p-${x.p}">${esc(x.name)}</a><span class="count">${x.points.length} ${x.points.length>1?"updates":"update"}</span></div>
-      <ol>${x.points.map(q=>`<li><span>${esc(q.t)}</span>${q.next?`<span class="nxt">${esc(q.next)}</span>`:""}</li>`).join("")}</ol>
+      <ol>${x.points.map(q=>`<li>${q.src||q.tag?`<span class="src">${q.tag?`<b class="tg tg-${q.tag}">${q.tag==="done"?"Completed":"Pending"}</b>`:""}${q.src?esc(q.src):""}</span>`:""}<span>${esc(q.t)}</span>${q.next?`<span class="nxt">${esc(q.next)}</span>`:""}</li>`).join("")}</ol>
     </section>`).join("")}</div>
     <section id="tracker" style="display:grid;gap:16px;margin-top:18px"></section>
     <p class="hint">Send each week's updates in the chat and they'll be added as a new week.</p></div>`;
