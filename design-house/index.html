@@ -162,6 +162,22 @@ input[type=search]{border-radius:12px;box-shadow:none}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
   .tile,.list,.empty,.seg,.chip,input[type=search]{background:var(--paper-hi)}}
 @media (prefers-reduced-motion:reduce){.tile{transition:none}}
+
+/* weekly updates */
+.wkhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:14px}
+.wkhead h3{font-family:var(--f-display);font-size:28px;letter-spacing:-.02em;margin:2px 0 0}
+.wkhead .hint{margin-top:4px}
+.wkgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:start}
+.wkcard{background:var(--paper);border:1px solid var(--edge);border-radius:20px;padding:18px 20px;box-shadow:var(--shadow);-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);display:grid;gap:10px;min-width:0}
+.wkt{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.wkt a{font-family:var(--f-display);font-size:22px;font-weight:700;letter-spacing:-.02em;text-decoration:none}
+.wkt a:hover{color:var(--info)}
+.wkcard ol{margin:0;padding-left:22px;display:grid;gap:10px}
+.wkcard li{font-size:15px;line-height:1.45;padding-left:2px}
+.wkcard li::marker{color:var(--muted);font-weight:600}
+.wkcard li span{display:block}
+.nxt{margin-top:5px;font-size:13px;color:var(--info);font-weight:500}
+.nxt::before{content:"Next week · ";color:var(--muted);font-weight:400}
 </style>
 </head>
 <body>
@@ -401,51 +417,38 @@ function tabApprovals(p){
   draw();
 }
 
-/* ================= WORK UPDATES — add new entries at the top =================
-   s: "done" | "ongoing" | "upcoming"   dt: date it happened or is due   by: who is responsible */
-const UPDATES = [
-  {p:"the-woods", dt:"2026-11-21", s:"upcoming", t:"Entire site 3D with all details", by:"iBrain", note:"About 3 weeks of work, plus the Diwali week"},
-  {p:"the-woods", dt:"2026-11-08", end:"2026-11-15", s:"upcoming", t:"iBrain office closed for Diwali", by:"iBrain", note:"No 3D work in this week"},
-  {p:"the-woods", dt:"2026-11-07", s:"upcoming", t:"Plot 30 villa draft render view", by:"iBrain", note:"Requested before the office closes"},
-  {p:"the-woods", dt:"2026-11-02", s:"ongoing", t:"West facing villa 3D model", by:"iBrain", note:"5 to 6 working days from 24 Oct"},
-  {p:"edge", dt:"2026-11-02", s:"ongoing", t:"HMDA building permission: final proceeding letter", by:"Approvals", note:"Approved, letter awaited"},
-  {p:"konak", dt:"2026-11-07", s:"upcoming", t:"Environmental Clearance amendment for additional extent", by:"Approvals"},
-  {p:"konak", dt:"2026-11-14", s:"upcoming", t:"Fire NOC", by:"Approvals", note:"Application pending"},
-  {p:"edge", dt:"2026-11-26", s:"upcoming", t:"Environmental Clearance amendment for additional extent", by:"Approvals"},
-  {p:"experience-centre", dt:"2026-11-01", s:"ongoing", t:"Appoint block work, steel fabrication, waterproofing, subsoil and STP contractors", by:"Ankura Homes"},
-  {p:"experience-centre", dt:"2026-12-01", s:"upcoming", t:"Appoint electrical, plumbing, HVAC, landscape, interior and external electrical contractors", by:"Ankura Homes"},
-  {p:"bitc", dt:"2026-11-30", s:"upcoming", t:"Appoint subsoil contractor", by:"Ankura Homes"},
-  {p:"bitc", dt:"2026-12-31", s:"upcoming", t:"Appoint electrical contractor", by:"Ankura Homes", note:"By December 2026"},
-  {p:"the-woods", dt:"2026-10-28", s:"done", t:"1215 sq.ft East villa GFC set released (BE-01 to BE-14)", by:"also design"},
-  {p:"the-woods", dt:"2026-10-28", s:"done", t:"1215 East villa SketchUp 3D model released (MDL-1215E)", by:"also design"},
-  {p:"utf", dt:"2026-10-28", s:"done", t:"Site data updated: 121 villas handed over, 58 under construction", by:"Design team"},
-  {p:"the-woods", dt:"2026-10-24", s:"done", t:"Plot 30 East villa 3D model received", by:"iBrain"},
-  {p:"the-woods", dt:"2026-10-22", s:"done", t:"Landscape drawing set issued for information and approval (LLA-TW-LC-01)", by:"Lumiscapes"},
+/* ================= WEEKLY WORK UPDATES — add each new week at the top =================
+   points: t = what happened, next = what follows next week (optional) */
+const WEEKS = [
+  { id:"nov-w1", label:"Nov 1st week", range:"1 – 7 Nov 2026", sub:"Major updates from last week (Oct 5th week)",
+    projects:[
+      { p:"edge", name:"EDGE", points:[
+        {t:"Club house footing details received"},
+        {t:"Compound wall demarcation started", next:"Work commences"},
+        {t:"Culvert 1 connecting Phase 1 & 2: schematic drawing done and sent for approval", next:"Release after levels are concluded"},
+        {t:"Villa structural schematic done (Zone 2)", next:"Villa structural drawings expected"},
+        {t:"Borewells: 1 successful at the labour camp (1\" yield) and 1 successful at the club house (2\" yield)"} ]},
+      { p:"konak", name:"KONAK-2", points:[
+        {t:"2 borewells drilled, 700 ft and 600 ft: one in the canal buffer area (2\" yield) and one next to the STP underground area (2\" yield)"} ]},
+      { p:"iqon-west", name:"IQON WEST", points:[
+        {t:"STP and HT yard concluded in the same location: Phase-1 south-east tot-lot portion"} ]}
+    ]}
 ];
-const UST={ongoing:"Ongoing",upcoming:"Coming up",done:"Done"};
-const UCOL={ongoing:"var(--info)",upcoming:"var(--due)",done:"var(--accent)"};
 function viewUpdates(){
-  ui.us ??= "ongoing"; ui.up ??= "all";
-  const pn=id=>(PROJECTS.find(p=>p.id===id)||{name:id}).name;
-  const projs=[...new Set(UPDATES.map(u=>u.p))];
-  const inP=u=>ui.up==="all"||u.p===ui.up;
-  const cnt=s=>UPDATES.filter(u=>u.s===s&&inP(u)).length;
-  const days=d=>Math.round((new Date(d)-new Date(TODAY))/864e5);
+  if(!ui.wk||!WEEKS.some(w=>w.id===ui.wk)) ui.wk=WEEKS[0].id;
+  const W=WEEKS.find(w=>w.id===ui.wk);
+  const nPts=W.projects.reduce((s,x)=>s+x.points.length,0), nNext=W.projects.reduce((s,x)=>s+x.points.filter(q=>q.next).length,0);
   $("#view").innerHTML=`<div style="display:grid;gap:20px">
-    <div class="ph"><h2>Work updates</h2><div class="loc">What's done, what's happening and what's next across projects</div></div>
-    <div class="big">${["ongoing","upcoming","done"].map(s=>`<div><b style="color:${s==="upcoming"?"var(--ink)":UCOL[s]}">${cnt(s)}</b> <span>${UST[s].toLowerCase()}</span></div>`).join("")}</div>
-    <div class="chips" id="uproj">${[["all","All projects"],...projs.map(id=>[id,pn(id)])].map(([k,l])=>`<button class="chip" data-v="${k}" aria-pressed="${ui.up===k}">${esc(l)}</button>`).join("")}</div>
-    <div class="seg" role="tablist" id="useg">${["ongoing","upcoming","done"].map(s=>`<button role="tab" data-s="${s}" aria-selected="${ui.us===s}">${UST[s]} <span style="opacity:.6;font-size:12px">${cnt(s)}</span></button>`).join("")}</div>
-    <div id="ulist"></div>
-    <p class="hint">Send new updates in the chat and they'll be added here.</p></div>`;
-  const L=UPDATES.filter(u=>u.s===ui.us&&inP(u)).sort((a,b)=>ui.us==="done"?(a.dt<b.dt?1:-1):(a.dt<b.dt?-1:1));
-  $("#ulist").innerHTML=L.length?`<div class="list">${L.map(u=>{
-    let tag;
-    if(u.s==="done") tag="Done";
-    else{const d=days(u.dt);tag=u.end&&u.dt<=TODAY&&u.end>=TODAY?"Now":d<0?`<span style="color:var(--warn)">${-d} days past · confirm</span>`:d===0?"Today":d+" days left"}
-    return `<div class="row"><span class="dot" style="background:${UCOL[u.s]}"></span><div class="t"><div><span class="tag">${esc(pn(u.p))}</span> ${esc(u.t)}</div><small style="font-family:var(--f-body);font-size:13px">${esc([u.by,u.note].filter(Boolean).join(" · "))}</small></div><div class="d">${fmt(u.dt)}${u.end?" – "+fmt(u.end):""}<small>${tag}</small></div></div>`}).join("")}</div>`:`<div class="empty">Nothing ${UST[ui.us].toLowerCase()} for this project.</div>`;
-  document.querySelectorAll("#uproj .chip").forEach(b=>b.onclick=()=>{ui.up=b.dataset.v;viewUpdates()});
-  document.querySelectorAll("#useg button").forEach(b=>b.onclick=()=>{ui.us=b.dataset.s;viewUpdates()});
+    <div class="ph"><h2>Work updates</h2><div class="loc">Weekly site and design updates</div></div>
+    ${WEEKS.length>1?`<div class="chips" id="wks">${WEEKS.map(w=>`<button class="chip" data-v="${w.id}" aria-pressed="${w.id===ui.wk}">${esc(w.label)}</button>`).join("")}</div>`:""}
+    <section class="wkhead"><div><div class="eyebrow">${esc(W.range)}</div><h3>${esc(W.label)}</h3>${W.sub?`<p class="hint">${esc(W.sub)}</p>`:""}</div>
+      <div class="big" style="gap:8px 22px"><div><b>${nPts}</b> <span>updates</span></div><div><b style="color:var(--info)">${nNext}</b> <span>due next week</span></div><div><b>${W.projects.length}</b> <span>projects</span></div></div></section>
+    <div class="wkgrid">${W.projects.map(x=>`<section class="wkcard">
+      <div class="wkt"><a href="#p-${x.p}">${esc(x.name)}</a><span class="count">${x.points.length} ${x.points.length>1?"updates":"update"}</span></div>
+      <ol>${x.points.map(q=>`<li><span>${esc(q.t)}</span>${q.next?`<span class="nxt">${esc(q.next)}</span>`:""}</li>`).join("")}</ol>
+    </section>`).join("")}</div>
+    <p class="hint">Send each week's updates in the chat and they'll be added as a new week.</p></div>`;
+  document.querySelectorAll("#wks .chip").forEach(b=>b.onclick=()=>{ui.wk=b.dataset.v;viewUpdates()});
 }
 
 const SLAB={ho:"Handed over",uc:"Under construction",sns:"Sold · not started",uns:"Unsold · not started"};
