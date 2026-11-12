@@ -181,7 +181,7 @@ input[type=search]{border-radius:12px;box-shadow:none}
 .tg-done{background:var(--accent-soft);color:var(--accent)}
 .tg-pending{background:var(--warn-soft);color:var(--warn)}
 .nxt{margin-top:5px;font-size:13px;color:var(--info);font-weight:500}
-.nxt::before{content:"Next week · ";color:var(--muted);font-weight:400}
+.nxt i{font-style:normal;color:var(--muted);font-weight:400}
 </style>
 </head>
 <body>
@@ -425,6 +425,28 @@ function tabApprovals(p){
 /* ================= WEEKLY WORK UPDATES — add each new week at the top =================
    points: t = what happened, next = what follows next week (optional) */
 const WEEKS = [
+  { id:"nov-w2", label:"Nov 2nd week", range:"8 – 14 Nov 2026", sub:"Updates of this week",
+    projects:[
+      { p:"m82", name:"M82", points:[
+        {t:"Final plans review scheduled with Ar. Kalyan (Studio Infinite)", when:"Fri 13 Nov", next:"Final plans review"},
+        {t:"Enough exercises received from RDA, plus design and in-house inputs. A consolidated review and revision is being prepared, and the final revision will follow from it"} ]},
+      { p:"utf", name:"UTF", points:[
+        {t:"CRM, Civil, Design and Founders' Office: a few decisions made on practical issues in coordination and communication"},
+        {t:"Design: number of revisions, stage-wise plans and slot system implementation"},
+        {t:"Civil: number of construction stages, stage-wise revision acceptance and dependencies"},
+        {t:"CRM: current 60+ units with commitments given by sales; a few villa plans initiated before registration"},
+        {t:"Discussed with Jaipal sir; based on the inputs, move forward and complete construction for Ravikanth sir's villas as well. Meeting held with Ar. Charan, Navaz, Sunil, Saritha and Phani sir; plan ready", when:"Mon 16 Nov", next:"Conclude in Monday's meeting, then final call with management"} ]},
+      { p:"edge", name:"EDGE", points:[
+        {tag:"done", t:"Culvert design released. GFC will be submitted for all 4 points; one culvert to be constructed now"},
+        {t:"Club house: facade design 3D for the finalised concept, from the studio and Ar. Charan", when:"Today, 12 Nov", next:"3D to be shared"},
+        {tag:"pending", t:"Landscape consultant to be onboarded to confirm external services; some dependencies fall on this"} ]},
+      { p:"konak", name:"KONAK", points:[
+        {t:"Club house: meeting done with consultants; most budgets received, final budgets being worked on", when:"Fri 13 Nov", next:"Confirmation meeting with management"} ]},
+      { p:"bitc", name:"BITC", points:[
+        {t:"13 prototype flats: 3D confirmation mood board", when:"Sat 14 Nov", next:"Mood board presentation; renders from in-house 3D (Bharath) within 30 days after, to be integrated into the website"} ]},
+      { p:null, name:"New villas", points:[
+        {t:"More plan options, in-house and outsourced", when:"Next week", next:"Options to be presented"} ]}
+    ]},
   { id:"nov-w1", label:"Nov 1st week", range:"1 – 7 Nov 2026", sub:"Major updates from last week (Oct 5th week)",
     projects:[
       { p:"edge", name:"EDGE", points:[
@@ -451,6 +473,12 @@ const WEEKS = [
 ];
 /* Running list of dated items — s: "done" | "ongoing" | "upcoming" */
 const UPDATES = [
+  {p:"edge", dt:"2026-11-12", s:"upcoming", t:"Club house facade design 3D for the finalised concept", by:"Studio and Ar. Charan"},
+  {p:"m82", dt:"2026-11-13", s:"upcoming", t:"Final plans review with Ar. Kalyan (Studio Infinite)", by:"Design team"},
+  {p:"konak", dt:"2026-11-13", s:"upcoming", t:"Club house final budgets: confirmation meeting with management", by:"Design team"},
+  {p:"bitc", dt:"2026-11-14", s:"upcoming", t:"13 prototype flats: 3D confirmation mood board presentation", by:"Design team", note:"Renders within 30 days after, from in-house 3D (Bharath)"},
+  {p:"utf", dt:"2026-11-16", s:"upcoming", t:"Conclude construction and revision plan; final call with management", by:"Design, Civil, CRM"},
+  {p:"edge", dt:"2026-11-12", s:"done", t:"Culvert design released; GFC to be submitted for all 4 points", by:"Design team"},
   {p:"the-woods", dt:"2026-11-21", s:"upcoming", t:"Entire site 3D with all details", by:"iBrain", note:"About 3 weeks of work, plus the Diwali week"},
   {p:"the-woods", dt:"2026-11-08", end:"2026-11-15", s:"upcoming", t:"iBrain office closed for Diwali", by:"iBrain", note:"No 3D work in this week"},
   {p:"the-woods", dt:"2026-11-07", s:"upcoming", t:"Plot 30 villa draft render view", by:"iBrain", note:"Requested before the office closes"},
@@ -501,10 +529,10 @@ function viewUpdates(){
     <div class="ph"><h2>Work updates</h2><div class="loc">Weekly site and design updates</div></div>
     ${WEEKS.length>1?`<div class="chips" id="wks">${WEEKS.map(w=>`<button class="chip" data-v="${w.id}" aria-pressed="${w.id===ui.wk}">${esc(w.label)}</button>`).join("")}</div>`:""}
     <section class="wkhead"><div><div class="eyebrow">${esc(W.range)}</div><h3>${esc(W.label)}</h3>${W.sub?`<p class="hint">${esc(W.sub)}</p>`:""}</div>
-      <div class="big" style="gap:8px 22px"><div><b>${nPts}</b> <span>updates</span></div><div><b style="color:var(--info)">${nNext}</b> <span>due next week</span></div><div><b>${W.projects.length}</b> <span>projects</span></div></div></section>
+      <div class="big" style="gap:8px 22px"><div><b>${nPts}</b> <span>updates</span></div><div><b style="color:var(--info)">${nNext}</b> <span>follow-ups</span></div><div><b>${W.projects.length}</b> <span>projects</span></div></div></section>
     <div class="wkgrid">${W.projects.map(x=>`<section class="wkcard">
-      <div class="wkt"><a href="#p-${x.p}">${esc(x.name)}</a><span class="count">${x.points.length} ${x.points.length>1?"updates":"update"}</span></div>
-      <ol>${x.points.map(q=>`<li>${q.src||q.tag?`<span class="src">${q.tag?`<b class="tg tg-${q.tag}">${q.tag==="done"?"Completed":"Pending"}</b>`:""}${q.src?esc(q.src):""}</span>`:""}<span>${esc(q.t)}</span>${q.next?`<span class="nxt">${esc(q.next)}</span>`:""}</li>`).join("")}</ol>
+      <div class="wkt">${x.p?`<a href="#p-${x.p}">${esc(x.name)}</a>`:`<a>${esc(x.name)}</a>`}<span class="count">${x.points.length} ${x.points.length>1?"updates":"update"}</span></div>
+      <ol>${x.points.map(q=>`<li>${q.src||q.tag?`<span class="src">${q.tag?`<b class="tg tg-${q.tag}">${q.tag==="done"?"Completed":"Pending"}</b>`:""}${q.src?esc(q.src):""}</span>`:""}<span>${esc(q.t)}</span>${q.next?`<span class="nxt"><i>${esc(q.when||"Next week")} · </i>${esc(q.next)}</span>`:""}</li>`).join("")}</ol>
     </section>`).join("")}</div>
     <section id="tracker" style="display:grid;gap:16px;margin-top:18px"></section>
     <p class="hint">Send each week's updates in the chat and they'll be added as a new week.</p></div>`;
