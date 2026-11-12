@@ -214,7 +214,7 @@ const PROJECTS = [
       {a:"NALA Conversion", s:"99% completed. Balance 10 guntas pending.", dt:""},
       {a:"Irrigation NOC", s:"Received", dt:"2026-08-07"},
       {a:"Irrigation Culvert NOC", s:"Received", dt:""},
-      {a:"Environmental Clearance", s:"Received. Amendment submitted for additional extent.", dt:"2026-11-07", target:true},
+      {a:"Environmental Clearance", s:"Amendment for additional extent done. Waiting to receive the copy.", dt:"2026-11-07", c:"done"},
       {a:"PCB NOC", s:"Received. Amendment pending for additional extent.", dt:"2026-12-07", target:true},
       {a:"Fire NOC", s:"Application submitted on 9 Nov 2026. Under process.", dt:"2026-11-14", target:true},
       {a:"HMDA Building Permission", s:"Under process", dt:"2026-12-31", target:true}] },
@@ -274,7 +274,7 @@ function acat(x){
 }
 const ALAB={done:"Done",progress:"In progress",pending:"Not started"};
 const ACOL={done:"var(--accent)",progress:"var(--info)",pending:"var(--warn)"};
-PROJECTS.forEach(p => { p.drawings ??= []; p.team ??= []; p.approvals ??= []; p.drawings.forEach(d => d.c = cat(d)); p.approvals.forEach(x => x.c = acat(x)); });
+PROJECTS.forEach(p => { p.drawings ??= []; p.team ??= []; p.approvals ??= []; p.drawings.forEach(d => d.c = cat(d)); p.approvals.forEach(x => x.c = x.c || acat(x)); });
 
 const ui = { tab:"timeline", month:null, disc:"all", stat:"all", q:"", limit:60 };
 
@@ -457,7 +457,7 @@ const UPDATES = [
   {p:"the-woods", dt:"2026-11-02", s:"ongoing", t:"West facing villa 3D model", by:"iBrain", note:"5 to 6 working days from 24 Oct"},
   {p:"edge", dt:"2026-12-31", s:"upcoming", t:"RERA registration", by:"Approvals"},
   {p:"edge", dt:"2026-11-10", s:"done", t:"HMDA building permission: final proceeding letter received", by:"Approvals"},
-  {p:"konak", dt:"2026-11-07", s:"upcoming", t:"Environmental Clearance amendment for additional extent", by:"Approvals"},
+  {p:"konak", dt:"2026-11-07", s:"done", t:"Environmental Clearance amendment for additional extent", by:"Approvals", note:"Done, waiting to receive the copy"},
   {p:"konak", dt:"2026-11-14", s:"upcoming", t:"Fire NOC", by:"Approvals", note:"Application submitted on 9 Nov"},
   {p:"edge", dt:"2026-11-26", s:"upcoming", t:"Environmental Clearance amendment for additional extent", by:"Approvals"},
   {p:"experience-centre", dt:"2026-11-01", s:"ongoing", t:"Appoint block work, steel fabrication, waterproofing, subsoil and STP contractors", by:"Ankura Homes"},
