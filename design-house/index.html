@@ -167,7 +167,8 @@ input[type=search]{border-radius:12px;box-shadow:none}
 .wkhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:14px}
 .wkhead h3{font-family:var(--f-display);font-size:28px;letter-spacing:-.02em;margin:2px 0 0}
 .wkhead .hint{margin-top:4px}
-.wkgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:start}
+.wkgrid{display:grid;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));gap:14px;align-items:start}
+.wkcol{display:grid;gap:14px;align-content:start;min-width:0}
 .wkcard{background:var(--paper);border:1px solid var(--edge);border-radius:20px;padding:18px 20px;box-shadow:var(--shadow);-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);display:grid;gap:10px;min-width:0}
 .wkt{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .wkt a{font-family:var(--f-display);font-size:22px;font-weight:700;letter-spacing:-.02em;text-decoration:none}
@@ -540,6 +541,18 @@ function renderTracker(){
   document.querySelectorAll("#uproj .chip").forEach(b=>b.onclick=()=>{ui.up=b.dataset.v;renderTracker()});
   document.querySelectorAll("#useg button").forEach(b=>b.onclick=()=>{ui.us=b.dataset.s;renderTracker()});
 }
+// place cards into balanced columns, keeping project order, each card to the shortest column
+function packCards(){
+  const g=$("#wkgrid"); if(!g) return;
+  const cards=[...g.querySelectorAll(".wkcard")];
+  const w=g.clientWidth, n=w>=900?3:w>=600?2:1;
+  if(g.dataset.n==String(n)&&g.children.length) { if(g.querySelector(".wkcol")) return; }
+  g.style.setProperty("--cols",n); g.dataset.n=n;
+  const cols=Array.from({length:n},()=>{const c=document.createElement("div");c.className="wkcol";return c});
+  g.replaceChildren(...cols);
+  cards.forEach(c=>{const h=cols.map(x=>x.offsetHeight);cols[h.indexOf(Math.min(...h))].appendChild(c)});
+}
+let packT; window.addEventListener("resize",()=>{clearTimeout(packT);packT=setTimeout(()=>{const g=$("#wkgrid");if(g&&g.dataset.n!==String(g.clientWidth>=900?3:g.clientWidth>=600?2:1)){g.dataset.n="";packCards()}},150)});
 function viewUpdates(){
   if(!ui.wk||!WEEKS.some(w=>w.id===ui.wk)) ui.wk=WEEKS[0].id;
   const W=WEEKS.find(w=>w.id===ui.wk);
@@ -549,7 +562,7 @@ function viewUpdates(){
     ${WEEKS.length>1?`<div class="chips" id="wks">${WEEKS.map(w=>`<button class="chip" data-v="${w.id}" aria-pressed="${w.id===ui.wk}">${esc(w.label)}</button>`).join("")}</div>`:""}
     <section class="wkhead"><div><div class="eyebrow">${esc(W.range)}</div><h3>${esc(W.label)}</h3>${W.sub?`<p class="hint">${esc(W.sub)}</p>`:""}</div>
       <div class="big" style="gap:8px 22px"><div><b>${nPts}</b> <span>updates</span></div><div><b style="color:var(--info)">${nNext}</b> <span>follow-ups</span></div><div><b>${W.projects.length}</b> <span>projects</span></div></div></section>
-    <div class="wkgrid">${sortProj(W.projects).map(x=>{
+    <div class="wkgrid" id="wkgrid">${sortProj(W.projects).map(x=>{
       const groups=[...new Set(x.points.map(q=>q.src||""))].sort((a,b)=>(a?1:0)-(b?1:0));
       return `<section class="wkcard">
       <div class="wkt">${x.p?`<a href="#p-${x.p}">${esc(x.name)}</a>`:`<a>${esc(x.name)}</a>`}<span class="count">${x.points.length} ${x.points.length>1?"updates":"update"}</span></div>
@@ -559,6 +572,7 @@ function viewUpdates(){
     <p class="hint">Send each week's updates in the chat and they'll be added as a new week.</p></div>`;
   renderTracker();
   document.querySelectorAll("#wks .chip").forEach(b=>b.onclick=()=>{ui.wk=b.dataset.v;viewUpdates()});
+  packCards();
 }
 
 const SLAB={ho:"Handed over",uc:"Under construction",sns:"Sold · not started",uns:"Unsold · not started"};
