@@ -180,6 +180,7 @@ input[type=search]{border-radius:12px;box-shadow:none}
 .tg{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px}
 .tg-done{background:var(--accent-soft);color:var(--accent)}
 .tg-pending{background:var(--warn-soft);color:var(--warn)}
+.wksub{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding-top:10px;border-top:1px solid var(--line)}
 .nxt{margin-top:5px;font-size:13px;color:var(--info);font-weight:500}
 .nxt i{font-style:normal;color:var(--muted);font-weight:400}
 </style>
@@ -266,6 +267,10 @@ const GROUPS = [["current","Current projects"],["completed","Completed"],["upcom
 const PLAN = { current:["konak","utf","edge","experience-centre","bitc","the-woods"], completed:["uta","iqon-west"], upcoming:["s73","m82"] };
 PROJECTS.forEach(p => p.group = Object.keys(PLAN).find(g => PLAN[g].includes(p.id)) || "current");
 const ORDER = Object.values(PLAN).flat();
+const rankP = id => { const i = ORDER.indexOf(id); return i < 0 ? 999 : i; };
+const sortProj = L => [...L].sort((a,b) => rankP(a.p) - rankP(b.p));
+const TAGR = {done:0, undefined:1, pending:2};
+const sortPts = L => L.map((q,i)=>[q,i]).sort((a,b)=>(TAGR[a[0].tag]-TAGR[b[0].tag])||(a[1]-b[1])).map(x=>x[0]);
 PROJECTS.sort((a,b) => ORDER.indexOf(a.id) - ORDER.indexOf(b.id));
 function acat(x){
   if(/pending/i.test(x.s)&&!/amendment|balance/i.test(x.s)) return "pending";
@@ -390,7 +395,7 @@ function tabDrawings(p){
 }
 
 function viewApprovals(){
-  const AP=PROJECTS.filter(p=>p.approvals.length);
+  const AP=PROJECTS.filter(p=>p.approvals.length).sort((a,b)=>rankP(a.id)-rankP(b.id));
   if(!ui.ap||!AP.some(p=>p.id===ui.ap)) ui.ap=AP[0]?.id;
   $("#view").innerHTML=`<div style="display:grid;gap:22px">
     <div class="ph"><h2>Approvals</h2><div class="loc">Permissions and clearances for each project</div></div>
@@ -517,11 +522,11 @@ const UCOL={ongoing:"var(--info)",upcoming:"var(--due)",done:"var(--accent)"};
 function renderTracker(){
   ui.us ??= "ongoing"; ui.up ??= "all";
   const pn=id=>(PROJECTS.find(p=>p.id===id)||{name:id}).name;
-  const projs=[...new Set(UPDATES.map(u=>u.p))];
+  const projs=[...new Set(UPDATES.map(u=>u.p))].sort((a,b)=>rankP(a)-rankP(b));
   const inP=u=>ui.up==="all"||u.p===ui.up;
   const cnt=s=>UPDATES.filter(u=>u.s===s&&inP(u)).length;
   const days=d=>Math.round((new Date(d)-new Date(TODAY))/864e5);
-  const L=UPDATES.filter(u=>u.s===ui.us&&inP(u)).sort((a,b)=>ui.us==="done"?(a.dt<b.dt?1:-1):(a.dt<b.dt?-1:1));
+  const L=UPDATES.filter(u=>u.s===ui.us&&inP(u)).sort((a,b)=>a.dt===b.dt?rankP(a.p)-rankP(b.p):ui.us==="done"?(a.dt<b.dt?1:-1):(a.dt<b.dt?-1:1));
   $("#tracker").innerHTML=`
     <div class="wkhead"><div><div class="eyebrow">All projects</div><h3>Dates to track</h3></div>
       <div class="big" style="gap:8px 22px">${["ongoing","upcoming","done"].map(s=>`<div><b style="color:${s==="upcoming"?"var(--ink)":UCOL[s]}">${cnt(s)}</b> <span>${UST[s].toLowerCase()}</span></div>`).join("")}</div></div>
@@ -544,10 +549,12 @@ function viewUpdates(){
     ${WEEKS.length>1?`<div class="chips" id="wks">${WEEKS.map(w=>`<button class="chip" data-v="${w.id}" aria-pressed="${w.id===ui.wk}">${esc(w.label)}</button>`).join("")}</div>`:""}
     <section class="wkhead"><div><div class="eyebrow">${esc(W.range)}</div><h3>${esc(W.label)}</h3>${W.sub?`<p class="hint">${esc(W.sub)}</p>`:""}</div>
       <div class="big" style="gap:8px 22px"><div><b>${nPts}</b> <span>updates</span></div><div><b style="color:var(--info)">${nNext}</b> <span>follow-ups</span></div><div><b>${W.projects.length}</b> <span>projects</span></div></div></section>
-    <div class="wkgrid">${W.projects.map(x=>`<section class="wkcard">
+    <div class="wkgrid">${sortProj(W.projects).map(x=>{
+      const groups=[...new Set(x.points.map(q=>q.src||""))].sort((a,b)=>(a?1:0)-(b?1:0));
+      return `<section class="wkcard">
       <div class="wkt">${x.p?`<a href="#p-${x.p}">${esc(x.name)}</a>`:`<a>${esc(x.name)}</a>`}<span class="count">${x.points.length} ${x.points.length>1?"updates":"update"}</span></div>
-      <ol>${x.points.map(q=>`<li>${q.src||q.tag?`<span class="src">${q.tag?`<b class="tg tg-${q.tag}">${q.tag==="done"?"Completed":"Pending"}</b>`:""}${q.src?esc(q.src):""}</span>`:""}<span>${esc(q.t)}</span>${q.next?`<span class="nxt"><i>${esc(q.when||"Next week")} · </i>${esc(q.next)}</span>`:""}</li>`).join("")}</ol>
-    </section>`).join("")}</div>
+      ${groups.map(g=>{const P=sortPts(x.points.filter(q=>(q.src||"")===g));return `${g?`<div class="wksub">${esc(g)}</div>`:""}<ol>${P.map(q=>`<li>${q.tag?`<span class="src"><b class="tg tg-${q.tag}">${q.tag==="done"?"Completed":"Pending"}</b></span>`:""}<span>${esc(q.t)}</span>${q.next?`<span class="nxt"><i>${esc(q.when||"Next week")} · </i>${esc(q.next)}</span>`:""}</li>`).join("")}</ol>`}).join("")}
+    </section>`}).join("")}</div>
     <section id="tracker" style="display:grid;gap:16px;margin-top:18px"></section>
     <p class="hint">Send each week's updates in the chat and they'll be added as a new week.</p></div>`;
   renderTracker();
